@@ -9,26 +9,27 @@ fn main() {
 fn app() -> Html {
     html! {
         <>
-            <h1>{"Hello, World!"}</h1>
-            <Card suit={Suit::Clubs} rank={RankWithBowers::RightBower}></Card>
-            <Card suit={Suit::Clubs} rank={RankWithBowers::LeftBower}></Card>
-            <Card suit={Suit::Clubs} rank={RankWithBowers::Ace}></Card>
+            <Card suit={Suit::Clubs} rank={RankWithBowers::RightBower} />
+            <Card suit={Suit::Clubs} rank={RankWithBowers::LeftBower} />
+            <Card suit={Suit::Clubs} rank={RankWithBowers::Ace} />
             <br/>
-            <Card suit={Suit::Diamonds} rank={RankWithBowers::RightBower}></Card>
-            <Card suit={Suit::Diamonds} rank={RankWithBowers::LeftBower}></Card>
-            <Card suit={Suit::Diamonds} rank={RankWithBowers::Ace}></Card>
+            <Card suit={Suit::Diamonds} rank={RankWithBowers::RightBower} />
+            <Card suit={Suit::Diamonds} rank={RankWithBowers::LeftBower} />
+            <Card suit={Suit::Diamonds} rank={RankWithBowers::Ace} />
             <br/>
-            <Card suit={Suit::Hearts} rank={RankWithBowers::RightBower}></Card>
-            <Card suit={Suit::Hearts} rank={RankWithBowers::LeftBower}></Card>
-            <Card suit={Suit::Hearts} rank={RankWithBowers::Ace}></Card>
+            <Card suit={Suit::Hearts} rank={RankWithBowers::RightBower} />
+            <Card suit={Suit::Hearts} rank={RankWithBowers::LeftBower} />
+            <Card suit={Suit::Hearts} rank={RankWithBowers::Ace} />
             <br/>
-            <Card suit={Suit::Spades} rank={RankWithBowers::RightBower}></Card>
-            <Card suit={Suit::Spades} rank={RankWithBowers::LeftBower}></Card>
-            <Card suit={Suit::Spades} rank={RankWithBowers::King}></Card>
-            <Card suit={Suit::Spades} rank={RankWithBowers::Queen}></Card>
-            <Card suit={Suit::Spades} rank={RankWithBowers::Jack}></Card>
-            <Card suit={Suit::Spades} rank={RankWithBowers::Ten}></Card>
-            <Card suit={Suit::Spades} rank={RankWithBowers::Nine}></Card>
+            <Card suit={Suit::Spades} rank={RankWithBowers::RightBower} />
+            <Card suit={Suit::Spades} rank={RankWithBowers::LeftBower} />
+            <Card suit={Suit::Spades} rank={RankWithBowers::King} />
+            <Card suit={Suit::Spades} rank={RankWithBowers::Queen} />
+            <Card suit={Suit::Spades} rank={RankWithBowers::Jack} />
+            <Card suit={Suit::Spades} rank={RankWithBowers::Ten} />
+            <Card suit={Suit::Spades} rank={RankWithBowers::Nine} />
+            <br/>
+            <CardBack />
         </>
     }
 }
@@ -36,7 +37,14 @@ fn app() -> Html {
 #[function_component(Card)]
 fn card(card: &CardProps) -> Html {
     html! {
-        <span style={format!("color:{};", card.suit.color())}>{card}</span>
+        <span style={format!("color:{}; font-size: xx-large;", card.suit.color())}>{card}</span>
+    }
+}
+
+#[function_component(CardBack)]
+fn card_back() -> Html {
+    html! {
+        <span style="color: blue; font-size: xx-large;">{"\u{1F0A0}"}</span>
     }
 }
 
