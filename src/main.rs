@@ -1,4 +1,6 @@
 use core::fmt;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use yew::prelude::*;
 
 fn main() {
@@ -7,6 +9,20 @@ fn main() {
 
 #[function_component(App)]
 fn app() -> Html {
+    let cards = vec![
+        CardProps {
+            suit: Suit::Clubs,
+            rank: RankWithBowers::Ace,
+        },
+        CardProps {
+            suit: Suit::Diamonds,
+            rank: RankWithBowers::Ace,
+        },
+        CardProps {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        },
+    ];
     html! {
         <>
             <Card suit={Suit::Clubs} rank={RankWithBowers::RightBower} />
@@ -30,7 +46,44 @@ fn app() -> Html {
             <Card suit={Suit::Spades} rank={RankWithBowers::Nine} />
             <br/>
             <CardBack />
+            <br/>
+            <Hand cards={cards.clone()} visible={true} />
+            <br/>
+            <Hand cards={cards} visible={false} />
+            <br/>
+            {Deck::create_shuffled_deck()
+                .cards
+                .iter()
+                .map(|card| html! {<Card ..*card/>})
+                .collect::<Html>()}
         </>
+    }
+}
+
+#[function_component(Hand)]
+fn hand(hand: &HandProps) -> Html {
+    {
+        hand.cards
+            .iter()
+            .map(|card| html! {if hand.visible {<Card ..*card/>} else { <CardBack/>}})
+            .collect()
+    }
+}
+
+#[derive(Properties)]
+struct HandProps {
+    cards: Vec<CardProps>,
+    visible: bool,
+}
+
+impl PartialEq for HandProps {
+    fn eq(&self, other: &Self) -> bool {
+        self.cards.iter().all(|card| other.cards.contains(card))
+            && other.cards.iter().all(|card| self.cards.contains(card))
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(&other)
     }
 }
 
@@ -48,7 +101,7 @@ fn card_back() -> Html {
     }
 }
 
-#[derive(Properties, PartialEq)]
+#[derive(Copy, Clone, Properties, PartialEq)]
 struct CardProps {
     suit: Suit,
     rank: RankWithBowers,
@@ -74,7 +127,7 @@ impl fmt::Display for CardProps {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 enum Suit {
     Clubs,
     Diamonds,
@@ -121,7 +174,7 @@ impl fmt::Display for Suit {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 enum Rank {
     Ace,
     King,
@@ -158,7 +211,7 @@ impl fmt::Display for Rank {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 enum RankWithBowers {
     RightBower,
     LeftBower,
@@ -174,7 +227,7 @@ impl RankWithBowers {
     fn suit_for_display(&self, suit: &Suit) -> Suit {
         match self {
             Self::LeftBower => Suit::other_suit_of_same_color(suit),
-            _ => suit.clone(),
+            _ => *suit,
         }
     }
 
@@ -187,5 +240,118 @@ impl RankWithBowers {
             Self::Ten => Rank::Ten,
             Self::Nine => Rank::Nine,
         }
+    }
+}
+
+struct Deck {
+    cards: Vec<CardProps>,
+}
+
+impl Deck {
+    fn create_all_cards() -> Vec<CardProps> {
+        vec![
+            CardProps {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::Ace,
+            },
+            CardProps {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::King,
+            },
+            CardProps {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::Queen,
+            },
+            CardProps {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::Jack,
+            },
+            CardProps {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::Ten,
+            },
+            CardProps {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::Nine,
+            },
+            CardProps {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ace,
+            },
+            CardProps {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::King,
+            },
+            CardProps {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Queen,
+            },
+            CardProps {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Jack,
+            },
+            CardProps {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ten,
+            },
+            CardProps {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Nine,
+            },
+            CardProps {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Ace,
+            },
+            CardProps {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::King,
+            },
+            CardProps {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Queen,
+            },
+            CardProps {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Jack,
+            },
+            CardProps {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Ten,
+            },
+            CardProps {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Nine,
+            },
+            CardProps {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ace,
+            },
+            CardProps {
+                suit: Suit::Spades,
+                rank: RankWithBowers::King,
+            },
+            CardProps {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Queen,
+            },
+            CardProps {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Jack,
+            },
+            CardProps {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            CardProps {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Nine,
+            },
+        ]
+    }
+
+    fn create_shuffled_deck() -> Deck {
+        let mut cards = Deck::create_all_cards();
+        cards.shuffle(&mut thread_rng());
+        Deck { cards: cards }
     }
 }
