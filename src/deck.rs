@@ -1,4 +1,6 @@
 use crate::card::*;
+use crate::game_state::GameState;
+use crate::hand::HandProps;
 use enum_iterator::IntoEnumIterator;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -22,5 +24,50 @@ impl Deck {
         let mut cards = Deck::create_all_cards();
         cards.shuffle(&mut thread_rng());
         Deck { cards }
+    }
+
+    pub fn deal(&mut self) -> GameState {
+        let mut hands = [
+            HandProps {
+                cards: Vec::new(),
+                visible: false,
+            },
+            HandProps {
+                cards: Vec::new(),
+                visible: false,
+            },
+            HandProps {
+                cards: Vec::new(),
+                visible: false,
+            },
+            HandProps {
+                cards: Vec::new(),
+                visible: true,
+            },
+        ];
+        hands[0].cards.push(self.cards.pop().unwrap());
+        hands[0].cards.push(self.cards.pop().unwrap());
+        hands[0].cards.push(self.cards.pop().unwrap());
+        hands[1].cards.push(self.cards.pop().unwrap());
+        hands[1].cards.push(self.cards.pop().unwrap());
+        hands[2].cards.push(self.cards.pop().unwrap());
+        hands[2].cards.push(self.cards.pop().unwrap());
+        hands[2].cards.push(self.cards.pop().unwrap());
+        hands[3].cards.push(self.cards.pop().unwrap());
+        hands[3].cards.push(self.cards.pop().unwrap());
+        hands[0].cards.push(self.cards.pop().unwrap());
+        hands[0].cards.push(self.cards.pop().unwrap());
+        hands[1].cards.push(self.cards.pop().unwrap());
+        hands[1].cards.push(self.cards.pop().unwrap());
+        hands[1].cards.push(self.cards.pop().unwrap());
+        hands[2].cards.push(self.cards.pop().unwrap());
+        hands[2].cards.push(self.cards.pop().unwrap());
+        hands[3].cards.push(self.cards.pop().unwrap());
+        hands[3].cards.push(self.cards.pop().unwrap());
+        hands[3].cards.push(self.cards.pop().unwrap());
+        GameState {
+            hands,
+            trump_candidate: self.cards.pop().unwrap(),
+        }
     }
 }

@@ -8,18 +8,22 @@
 
 .player {
     border: 1px solid black;
+    text-align: center;
 }
 
 .left {
     grid-area: left;
+    writing-mode: sideways-rl;
 }
 
 .top {
     grid-area: top;
+    transform: rotate(180deg);
 }
 
 .right {
     grid-area: right;
+    writing-mode: sideways-lr;
 }
 
 .bottom {

@@ -5,38 +5,24 @@ use yew::prelude::*;
 
 #[function_component(Euchre)]
 pub fn euchre() -> Html {
-    let cards = vec![
-        CardProps {
-            suit: Suit::Clubs,
-            rank: RankWithBowers::Ace,
-        },
-        CardProps {
-            suit: Suit::Diamonds,
-            rank: RankWithBowers::Ace,
-        },
-        CardProps {
-            suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
-        },
-    ];
+    let game_state = use_state_eq(|| Deck::create_shuffled_deck().deal());
     html! {
-    <>
-        <div class="playing-surface">
-            <div class="player left" />
-            <div class="player top" />
-            <div class="player right" />
-            <div class="player bottom" />
-            <div class="center">
-                <Hand cards={cards.clone()} visible={true} />
-                <br/>
-                <Hand cards={cards} visible={false} />
-                <br/>
-                {Deck::create_shuffled_deck()
-                    .cards
-                    .iter()
-                    .map(|card| html! {<Card ..*card/>})
-                    .collect::<Html>()}
-            </div>
-        </div>
-    </>    }
+     <div class="playing-surface">
+         <div class="player left">
+            <Hand ..game_state.hands[0].clone() />
+         </div>
+         <div class="player top">
+            <Hand ..game_state.hands[1].clone() />
+         </div>
+         <div class="player right">
+            <Hand ..game_state.hands[2].clone() />
+         </div>
+         <div class="player bottom">
+            <Hand ..game_state.hands[3].clone() />
+         </div>
+         <div class="center">
+             <Card ..game_state.trump_candidate />
+         </div>
+     </div>
+    }
 }

@@ -11,7 +11,7 @@ pub fn hand(hand: &HandProps) -> Html {
     }
 }
 
-#[derive(Properties)]
+#[derive(Clone, Properties)]
 pub struct HandProps {
     pub cards: Vec<CardProps>,
     pub visible: bool,
