@@ -1,0 +1,32 @@
+.playing-surface {
+    display: grid;
+    gap: 2%;
+    grid-template-areas: ". top ." "left center right" " . bottom .";
+    grid-template-rows: 1fr 2fr 1fr;
+    grid-template-columns: 1fr 2fr 1fr;
+}
+
+.player {
+    border: 1px solid black;
+}
+
+.left {
+    grid-area: left;
+}
+
+.top {
+    grid-area: top;
+}
+
+.right {
+    grid-area: right;
+}
+
+.bottom {
+    grid-area: bottom;
+}
+
+.center {
+    grid-area: center;
+    border: 1px solid green;
+}
