@@ -1,8 +1,6 @@
+use crate::{rank_with_bowers::RankWithBowers, suit::Suit};
 use core::fmt;
-use enum_iterator::IntoEnumIterator;
 use yew::prelude::*;
-
-use crate::rank_with_bowers::RankWithBowers;
 
 #[function_component(Card)]
 pub fn card(card: &CardProps) -> Html {
@@ -44,49 +42,44 @@ impl fmt::Display for CardProps {
     }
 }
 
-#[derive(Copy, Clone, Debug, IntoEnumIterator, PartialEq)]
-pub enum Suit {
-    Clubs,
-    Diamonds,
-    Hearts,
-    Spades,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
 
-impl Suit {
-    pub fn other_suit_of_same_color(&self) -> Suit {
-        match self {
-            Self::Clubs => Suit::Spades,
-            Self::Diamonds => Suit::Hearts,
-            Self::Hearts => Suit::Diamonds,
-            Self::Spades => Suit::Clubs,
-        }
-    }
-
-    pub fn starting_point_for_unicode_card(&self) -> u32 {
-        match self {
-            Self::Clubs => 0x1F0D0,
-            Self::Diamonds => 0x1F0C0,
-            Self::Hearts => 0x1F0B0,
-            Self::Spades => 0x1F0A0,
-        }
-    }
-
-    pub fn color(&self) -> String {
-        match self {
-            Self::Clubs | Self::Spades => String::from("black"),
-            Self::Diamonds | Self::Hearts => String::from("red"),
-        }
-    }
-}
-
-impl fmt::Display for Suit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suit = match self {
-            Self::Clubs => "\u{2663}",
-            Self::Diamonds => "\u{2666}",
-            Self::Hearts => "\u{2665}",
-            Self::Spades => "\u{2660}",
-        };
-        write!(f, "{}", suit)
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::RightBower} => "\u{1F0DB}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::LeftBower} => "\u{1F0AB}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::Ace} => "\u{1F0D1}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::King} => "\u{1F0DE}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::Queen} => "\u{1F0DD}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::Jack} => "\u{1F0DB}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::Ten} => "\u{1F0DA}")]
+    #[test_case(CardProps {suit: Suit::Clubs, rank: RankWithBowers::Nine} => "\u{1F0D9}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::RightBower} => "\u{1F0CB}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::LeftBower} => "\u{1F0BB}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::Ace} => "\u{1F0C1}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::King} => "\u{1F0CE}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::Queen} => "\u{1F0CD}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::Jack} => "\u{1F0CB}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::Ten} => "\u{1F0CA}")]
+    #[test_case(CardProps {suit: Suit::Diamonds, rank: RankWithBowers::Nine} => "\u{1F0C9}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::RightBower} => "\u{1F0BB}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::LeftBower} => "\u{1F0CB}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::Ace} => "\u{1F0B1}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::King} => "\u{1F0BE}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::Queen} => "\u{1F0BD}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::Jack} => "\u{1F0BB}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::Ten} => "\u{1F0BA}")]
+    #[test_case(CardProps {suit: Suit::Hearts, rank: RankWithBowers::Nine} => "\u{1F0B9}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::RightBower} => "\u{1F0AB}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::LeftBower} => "\u{1F0DB}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::Ace} => "\u{1F0A1}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::King} => "\u{1F0AE}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::Queen} => "\u{1F0AD}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::Jack} => "\u{1F0AB}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::Ten} => "\u{1F0AA}")]
+    #[test_case(CardProps {suit: Suit::Spades, rank: RankWithBowers::Nine} => "\u{1F0A9}")]
+    fn display(card: CardProps) -> String {
+        card.to_string()
     }
 }

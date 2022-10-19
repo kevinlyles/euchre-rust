@@ -7,6 +7,7 @@ mod game_state;
 mod hand;
 mod rank;
 mod rank_with_bowers;
+mod suit;
 
 fn main() {
     yew::start_app::<Euchre>();

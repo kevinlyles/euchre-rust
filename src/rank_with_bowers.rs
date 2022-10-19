@@ -1,4 +1,4 @@
-use crate::{card::Suit, rank::Rank};
+use crate::{rank::Rank, suit::Suit};
 use enum_iterator::IntoEnumIterator;
 
 #[derive(Copy, Clone, IntoEnumIterator, PartialEq)]
