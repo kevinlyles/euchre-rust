@@ -1,6 +1,7 @@
 use crate::card::*;
 use crate::game_state::GameState;
 use crate::hand::HandProps;
+use crate::rank_with_bowers::RankWithBowers;
 use enum_iterator::IntoEnumIterator;
 use rand::seq::SliceRandom;
 use rand::thread_rng;

@@ -10,3 +10,6 @@ rand = "~0.8.5"
 yew = "~0.19"
 getrandom = { version = "~0.2", features = ["js"] }
 enum-iterator = "~0.8"
+
+[dev-dependencies]
+test-case = "2.2.2"
