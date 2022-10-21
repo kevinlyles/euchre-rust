@@ -1,28 +1,86 @@
+use crate::bid_state::BidState;
 use crate::card::*;
 use crate::deck::*;
 use crate::hand::*;
+use crate::hand_state::HandStateKind;
+use crate::player::Player;
 use yew::prelude::*;
 
 #[function_component(Euchre)]
 pub fn euchre() -> Html {
-    let game_state = use_state_eq(|| Deck::create_shuffled_deck().deal());
-    html! {
-     <div class="playing-surface">
-         <div class="player left">
-            <Hand ..game_state.hands[0].clone() />
-         </div>
-         <div class="player top">
-            <Hand ..game_state.hands[1].clone() />
-         </div>
-         <div class="player right">
-            <Hand ..game_state.hands[2].clone() />
-         </div>
-         <div class="player bottom">
-            <Hand ..game_state.hands[3].clone() />
-         </div>
-         <div class="center">
-             <Card ..game_state.trump_candidate />
-         </div>
-     </div>
+    let game_state = use_state_eq(|| Deck::create_shuffled_deck().deal(Player::Bottom));
+    match &game_state.hand_state.phase {
+        HandStateKind::Scoring { tricks_taken: _ } => html! {<div>{"To do!"}</div>},
+        HandStateKind::Bidding {
+            hands,
+            bid_state: _,
+        }
+        | HandStateKind::FirstTrick {
+            hands,
+            trump: _,
+            trick_state: _,
+        }
+        | HandStateKind::SecondTrick {
+            hands,
+            trump: _,
+            trick_state: _,
+            tricks_taken: _,
+        }
+        | HandStateKind::ThirdTrick {
+            hands,
+            trump: _,
+            trick_state: _,
+            tricks_taken: _,
+        }
+        | HandStateKind::FourthTrick {
+            hands,
+            trump: _,
+            trick_state: _,
+            tricks_taken: _,
+        }
+        | HandStateKind::FifthTrick {
+            hands,
+            trump: _,
+            trick_state: _,
+            tricks_taken: _,
+        } => {
+            html! {
+               <div class="playing-surface">
+                  <div class="player left">
+                     <Hand ..hands[0].clone()/>
+                  </div>
+                  <div class="player top">
+                     <Hand ..hands[1].clone()/>
+                  </div>
+                  <div class="player right">
+                     <Hand ..hands[2].clone()/>
+                  </div>
+                  <div class="player bottom">
+                     <Hand ..hands[3].clone()/>
+                  </div>
+                  <div class="center">
+                     {match &game_state.hand_state.phase {
+                        HandStateKind::Bidding {hands: _, bid_state} => match bid_state {
+                           BidState::FirstRoundFirstPlayer {dealer, trump_candidate}
+                           | BidState::FirstRoundSecondPlayer { dealer, trump_candidate }
+                           | BidState::FirstRoundThirdPlayer { dealer, trump_candidate }
+                           | BidState::FirstRoundFourthPlayer { dealer, trump_candidate }
+                           | BidState::OrderedUp { dealer, caller: _, trump_candidate }=>
+                              html!{<Card ..trump_candidate.clone()/>},
+                         _=>
+                           html!{<CardBack />},
+                        },
+                         HandStateKind::FirstTrick { hands: _, trump, trick_state: _ } |
+                         HandStateKind::SecondTrick { hands: _, trump, trick_state: _, tricks_taken: _ } |
+                         HandStateKind::ThirdTrick { hands: _, trump, trick_state: _, tricks_taken: _ } |
+                         HandStateKind::FourthTrick { hands: _, trump, trick_state: _, tricks_taken: _ } |
+                         HandStateKind::FifthTrick { hands: _, trump, trick_state: _, tricks_taken: _ } => html!{
+                           <div>{trump.to_string()}</div>
+                         },
+                         HandStateKind::Scoring { tricks_taken: _ } => html!{}, }}
+                  </div>
+               </div>
+            }
+        }
     }
 }

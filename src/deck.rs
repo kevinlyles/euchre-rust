@@ -1,6 +1,9 @@
+use crate::bid_state::BidState;
 use crate::card::*;
 use crate::game_state::GameState;
 use crate::hand::HandProps;
+use crate::hand_state::{HandState, HandStateKind};
+use crate::player::Player;
 use crate::rank_with_bowers::RankWithBowers;
 use crate::suit::Suit;
 use enum_iterator::IntoEnumIterator;
@@ -28,7 +31,7 @@ impl Deck {
         Deck { cards }
     }
 
-    pub fn deal(&mut self) -> GameState {
+    pub fn deal(&mut self, dealer: Player) -> GameState {
         let mut hands = [
             HandProps {
                 cards: Vec::new(),
@@ -68,8 +71,16 @@ impl Deck {
         hands[3].cards.push(self.cards.pop().unwrap());
         hands[3].cards.push(self.cards.pop().unwrap());
         GameState {
-            hands,
-            trump_candidate: self.cards.pop().unwrap(),
+            hand_state: HandState {
+                dealer,
+                phase: HandStateKind::Bidding {
+                    hands,
+                    bid_state: BidState::FirstRoundFirstPlayer {
+                        dealer,
+                        trump_candidate: self.cards.pop().unwrap(),
+                    },
+                },
+            },
         }
     }
 }

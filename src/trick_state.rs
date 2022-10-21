@@ -1,23 +1,24 @@
-use crate::{card::Card, player::Player, suit::Suit};
+use crate::{card::CardProps, player::Player, suit::Suit};
 
-enum TrickState {
+#[derive(PartialEq)]
+pub enum TrickState {
     Start {
         leader: Player,
     },
     FirstCardPlayed {
         suit_lead: Suit,
-        cards_played: [Card; 1],
+        cards_played: [CardProps; 1],
     },
     SecondCardPlayed {
         suit_lead: Suit,
-        cards_played: [Card; 2],
+        cards_played: [CardProps; 2],
     },
     ThirdCardPlayed {
         suit_lead: Suit,
-        cards_played: [Card; 3],
+        cards_played: [CardProps; 3],
     },
     FourthCardPlayed {
         suit_lead: Suit,
-        cards_played: [Card; 4],
+        cards_played: [CardProps; 4],
     },
 }

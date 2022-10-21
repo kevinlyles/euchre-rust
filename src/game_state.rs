@@ -1,8 +1,7 @@
 use crate::card::*;
-use crate::hand::*;
+use crate::hand_state::HandState;
 
 #[derive(PartialEq)]
 pub struct GameState {
-    pub hands: [HandProps; 4],
-    pub trump_candidate: CardProps,
+    pub hand_state: HandState,
 }

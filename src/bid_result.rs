@@ -1,8 +1,18 @@
 use crate::{player::Player, suit::Suit};
 
-struct BidResult {
-    trump: Suit,
-    caller: Player,
-    went_alone: bool,
-    defended_alone: Option<Player>,
+pub enum BidResult {
+    Called {
+        trump: Suit,
+        caller: Player,
+    },
+    CalledAlone {
+        trump: Suit,
+        caller: Player,
+    },
+    DefendedAlone {
+        trump: Suit,
+        caller: Player,
+        defender: Player,
+    },
+    EveryonePassed,
 }

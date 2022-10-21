@@ -1,40 +1,47 @@
-use crate::{card::CardProps, hand::HandProps, suit::Suit};
+use crate::{
+    bid_state::BidState, card::CardProps, hand::HandProps, player::Player, suit::Suit,
+    trick_state::TrickState,
+};
 
-enum HandState {
-    BiddingRoundOne {
-        hands: [[HandProps; 5]; 4],
-        trump_candidate: CardProps,
-    },
-    Discarding {
-        hands: [[HandProps; 5]; 4],
-        trump_candidate: CardProps,
-    },
-    BiddingRoundTwo {
-        hands: [[HandProps; 5]; 4],
-        disallowed_suit: Suit,
+#[derive(PartialEq)]
+pub struct HandState {
+    pub dealer: Player,
+    pub phase: HandStateKind,
+}
+
+#[derive(PartialEq)]
+pub enum HandStateKind {
+    Bidding {
+        hands: [HandProps; 4],
+        bid_state: BidState,
     },
     FirstTrick {
-        hands: [[HandProps; 5]; 4],
+        hands: [HandProps; 4],
         trump: Suit,
+        trick_state: TrickState,
     },
     SecondTrick {
-        hands: [[HandProps; 4]; 4],
+        hands: [HandProps; 4],
         trump: Suit,
+        trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     ThirdTrick {
-        hands: [[HandProps; 3]; 4],
+        hands: [HandProps; 4],
         trump: Suit,
+        trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     FourthTrick {
-        hands: [[HandProps; 2]; 4],
+        hands: [HandProps; 4],
         trump: Suit,
+        trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     FifthTrick {
-        hands: [[HandProps; 1]; 4],
+        hands: [HandProps; 4],
         trump: Suit,
+        trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     Scoring {
