@@ -7,9 +7,7 @@ use crate::{
 
 #[function_component(BidControls)]
 pub fn bid_controls(props: &BidControlsProps) -> Html {
-    //TODO: figure out a way to modify the original bid state, not a copy
-    let bid_state = use_state(|| props.bid_state);
-    match *bid_state {
+    match *props.bid_state {
         Some(state) => {
             let is_first_round = match state.phase {
                 BidStateKind::FirstRoundFirstPlayer { .. }
@@ -31,17 +29,18 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                 _ => false,
             };
             if is_first_round {
-                let bid_state_1 = bid_state.clone();
+                let bid_state_1 = props.bid_state.clone();
                 let state_1 = state.clone();
                 let order_up_callback = Callback::from(move |_| {
                     let new_state;
-                    new_state = state_1.order_it_up();
+                    //TODO: allow alone and defending alone
+                    new_state = state_1.order_it_up(false, None);
                     match new_state {
                         Some(_) => bid_state_1.set(new_state),
                         None => (),
                     }
                 });
-                let bid_state_2 = bid_state.clone();
+                let bid_state_2 = props.bid_state.clone();
                 let state_2 = state.clone();
                 let pass_callback = Callback::from(move |_| {
                     let new_state;
@@ -68,5 +67,5 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
 #[derive(PartialEq, Properties)]
 pub struct BidControlsProps {
     pub player: Player,
-    pub bid_state: Option<BidState>,
+    pub bid_state: UseStateHandle<Option<BidState>>,
 }

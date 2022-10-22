@@ -14,19 +14,20 @@ pub fn euchre() -> Html {
     match &game_state.hand_state.phase {
         HandStateKind::Scoring { tricks_taken: _ } => html! {<div>{"To do!"}</div>},
         HandStateKind::Bidding { hands, bid_state } => {
+            let bid_state_handle = use_state_eq(|| Some(*bid_state));
             html! {
                <div class="table">
                   <div class="player left">
-                    <PlayerArea player={Player::Left} hand={hands[0].clone()} bid_state={Some(*bid_state)} />
+                    <PlayerArea player={Player::Left} hand={hands[0].clone()} bid_state={bid_state_handle.clone()} />
                   </div>
                   <div class="player top">
-                    <PlayerArea player={Player::Top} hand={hands[1].clone()} bid_state={Some(*bid_state)} />
+                    <PlayerArea player={Player::Top} hand={hands[1].clone()} bid_state={bid_state_handle.clone()} />
                   </div>
                   <div class="player right">
-                    <PlayerArea player={Player::Right} hand={hands[2].clone()} bid_state={Some(*bid_state)} />
+                    <PlayerArea player={Player::Right} hand={hands[2].clone()} bid_state={bid_state_handle.clone()} />
                   </div>
                   <div class="player bottom">
-                    <PlayerArea player={Player::Bottom} hand={hands[3].clone()} bid_state={Some(*bid_state)} />
+                    <PlayerArea player={Player::Bottom} hand={hands[3].clone()} bid_state={bid_state_handle} />
                   </div>
                   <div class="center">
                     <PlayingSurface dealer={bid_state.dealer} trump_candidate={bid_state} />
@@ -63,10 +64,11 @@ pub fn euchre() -> Html {
             trick_state: _,
             tricks_taken: _,
         } => {
+            let bid_state = use_state_eq(|| None);
             html! {
                <div class="playing-surface">
                   <div class="player left">
-                    <PlayerArea player={Player::Left} hand={hands[0].clone()} bid_state={None} />
+                    <PlayerArea player={Player::Left} hand={hands[0].clone()} bid_state={bid_state} />
                   </div>
                   <div class="player top">
                      <Hand ..hands[1].clone()/>
