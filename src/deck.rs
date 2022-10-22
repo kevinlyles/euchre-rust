@@ -1,4 +1,4 @@
-use crate::bid_state::BidState;
+use crate::bid_state::{BidState, BidStateKind};
 use crate::card::*;
 use crate::game_state::GameState;
 use crate::hand::HandProps;
@@ -75,9 +75,11 @@ impl Deck {
                 dealer,
                 phase: HandStateKind::Bidding {
                     hands,
-                    bid_state: BidState::FirstRoundFirstPlayer {
+                    bid_state: BidState {
                         dealer,
-                        trump_candidate: self.cards.pop().unwrap(),
+                        phase: BidStateKind::FirstRoundFirstPlayer {
+                            trump_candidate: self.cards.pop().unwrap(),
+                        },
                     },
                 },
             },

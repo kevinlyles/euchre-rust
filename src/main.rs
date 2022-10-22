@@ -9,6 +9,7 @@ mod game_state;
 mod hand;
 mod hand_state;
 mod player;
+mod playing_surface;
 mod rank;
 mod rank_with_bowers;
 mod suit;

@@ -4,11 +4,11 @@
     grid-template-areas: ". top ." "left center right" " . bottom .";
     grid-template-rows: 1fr 2fr 1fr;
     grid-template-columns: 1fr 2fr 1fr;
+    text-align: center;
 }
 
 .player {
     border: 1px solid black;
-    text-align: center;
 }
 
 .left {
@@ -33,4 +33,9 @@
 .center {
     grid-area: center;
     border: 1px solid green;
+
+    display: grid;
+    grid-template-areas: ". top ." "left . right" " . bottom .";
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
 }
