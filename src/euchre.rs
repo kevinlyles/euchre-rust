@@ -14,7 +14,7 @@ pub fn euchre() -> Html {
         HandStateKind::Scoring { tricks_taken: _ } => html! {<div>{"To do!"}</div>},
         HandStateKind::Bidding { hands, bid_state } => {
             html! {
-               <div class="playing-surface">
+               <div class="table">
                   <div class="player left">
                      <Hand ..hands[0].clone()/>
                   </div>
