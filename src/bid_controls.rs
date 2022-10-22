@@ -1,7 +1,7 @@
 use yew::prelude::*;
 
 use crate::{
-    bid_state::{self, BidState, BidStateKind},
+    bid_state::{BidState, BidStateKind},
     player::Player,
 };
 

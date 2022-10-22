@@ -1,6 +1,5 @@
 use crate::{
-    bid_state::BidState, card::CardProps, hand::HandProps, player::Player, suit::Suit,
-    trick_state::TrickState,
+    bid_state::BidState, hand::HandProps, player::Player, suit::Suit, trick_state::TrickState,
 };
 
 #[derive(PartialEq)]
