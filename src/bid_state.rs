@@ -1,16 +1,14 @@
-use std::ops::Deref;
-
 use yew::html::IntoPropValue;
 
 use crate::{card::CardProps, player::Player, suit::Suit};
 
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct BidState {
     pub dealer: Player,
     pub phase: BidStateKind,
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum BidStateKind {
     FirstRoundFirstPlayer {
         trump_candidate: CardProps,

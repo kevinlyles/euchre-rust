@@ -4,28 +4,29 @@ use crate::deck::*;
 use crate::hand::*;
 use crate::hand_state::HandStateKind;
 use crate::player::Player;
+use crate::player_area::PlayerArea;
 use crate::playing_surface::PlayingSurface;
 use yew::prelude::*;
 
 #[function_component(Euchre)]
 pub fn euchre() -> Html {
-    let game_state = use_state_eq(|| Deck::create_shuffled_deck().deal(Player::Bottom));
+    let game_state = use_state_eq(|| Deck::create_shuffled_deck().deal(Player::Right));
     match &game_state.hand_state.phase {
         HandStateKind::Scoring { tricks_taken: _ } => html! {<div>{"To do!"}</div>},
         HandStateKind::Bidding { hands, bid_state } => {
             html! {
                <div class="table">
                   <div class="player left">
-                     <Hand ..hands[0].clone()/>
+                    <PlayerArea player={Player::Left} hand={hands[0].clone()} bid_state={Some(*bid_state)} />
                   </div>
                   <div class="player top">
-                     <Hand ..hands[1].clone()/>
+                    <PlayerArea player={Player::Top} hand={hands[1].clone()} bid_state={Some(*bid_state)} />
                   </div>
                   <div class="player right">
-                     <Hand ..hands[2].clone()/>
+                    <PlayerArea player={Player::Right} hand={hands[2].clone()} bid_state={Some(*bid_state)} />
                   </div>
                   <div class="player bottom">
-                     <Hand ..hands[3].clone()/>
+                    <PlayerArea player={Player::Bottom} hand={hands[3].clone()} bid_state={Some(*bid_state)} />
                   </div>
                   <div class="center">
                     <PlayingSurface dealer={bid_state.dealer} trump_candidate={bid_state} />
@@ -65,7 +66,7 @@ pub fn euchre() -> Html {
             html! {
                <div class="playing-surface">
                   <div class="player left">
-                     <Hand ..hands[0].clone()/>
+                    <PlayerArea player={Player::Left} hand={hands[0].clone()} bid_state={None} />
                   </div>
                   <div class="player top">
                      <Hand ..hands[1].clone()/>

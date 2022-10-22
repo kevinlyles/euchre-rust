@@ -3,11 +3,15 @@ use yew::prelude::*;
 
 #[function_component(Hand)]
 pub fn hand(hand: &HandProps) -> Html {
-    {
-        hand.cards
-            .iter()
-            .map(|card| html! {if hand.visible {<Card ..*card/>} else { <CardBack/>}})
-            .collect()
+    html! {
+        <div>
+            {
+                hand.cards
+                    .iter()
+                    .map(|card| html! {if hand.visible {<Card ..*card/>} else { <CardBack/>}})
+                    .collect::<Html>()
+            }
+        </div>
     }
 }
 
