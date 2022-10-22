@@ -7,7 +7,7 @@ pub fn hand(hand: &HandProps) -> Html {
         <div>
             {
                 for hand.cards.iter()
-                    .map(|card| html! {if hand.visible {<Card ..*card/>} else { <CardBack/>}})
+                    .map(|card| html! {if hand.visible || cfg!(show_all_cards) {<Card ..*card/>} else { <CardBack/>}})
             }
         </div>
     }

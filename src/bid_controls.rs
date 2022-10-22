@@ -41,7 +41,9 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                     });
                     html! {
                         <>
-                            <button onclick={order_up_callback}>{"Order Up"}</button>
+                            <button onclick={order_up_callback}>{
+                                if state_2.dealer == props.player {"Pick Up"} else {"Order Up"}
+                            }</button>
                             <button onclick={pass_callback}>{"Pass"}</button>
                         </>
                     }
