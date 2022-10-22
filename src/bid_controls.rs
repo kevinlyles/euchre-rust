@@ -1,40 +1,60 @@
 use yew::prelude::*;
 
 use crate::{
-    bid_state::{BidState, BidStateKind},
+    bid_state::{self, BidState, BidStateKind},
     player::Player,
 };
 
 #[function_component(BidControls)]
 pub fn bid_controls(props: &BidControlsProps) -> Html {
-    match props.bid_state {
-        Some(bid_state) => {
-            let is_first_round = match bid_state.phase {
+    //TODO: figure out a way to modify the original bid state, not a copy
+    let bid_state = use_state(|| props.bid_state);
+    match *bid_state {
+        Some(state) => {
+            let is_first_round = match state.phase {
                 BidStateKind::FirstRoundFirstPlayer { .. }
-                    if bid_state.dealer.next_player(None, None) == props.player =>
+                    if state.dealer.next_player(None, None) == props.player =>
                 {
                     true
                 }
                 BidStateKind::FirstRoundSecondPlayer { .. }
-                    if bid_state.dealer.partner() == props.player =>
+                    if state.dealer.partner() == props.player =>
                 {
                     true
                 }
                 BidStateKind::FirstRoundThirdPlayer { .. }
-                    if bid_state.dealer.partner().next_player(None, None) == props.player =>
+                    if state.dealer.partner().next_player(None, None) == props.player =>
                 {
                     true
                 }
-                BidStateKind::FirstRoundFourthPlayer { .. } if bid_state.dealer == props.player => {
-                    true
-                }
+                BidStateKind::FirstRoundFourthPlayer { .. } if state.dealer == props.player => true,
                 _ => false,
             };
             if is_first_round {
+                let bid_state_1 = bid_state.clone();
+                let state_1 = state.clone();
+                let order_up_callback = Callback::from(move |_| {
+                    let new_state;
+                    new_state = state_1.order_it_up();
+                    match new_state {
+                        Some(_) => bid_state_1.set(new_state),
+                        None => (),
+                    }
+                });
+                let bid_state_2 = bid_state.clone();
+                let state_2 = state.clone();
+                let pass_callback = Callback::from(move |_| {
+                    let new_state;
+                    new_state = state_2.pass();
+                    match new_state {
+                        Some(_) => bid_state_2.set(new_state),
+                        None => (),
+                    }
+                });
                 html! {
                     <>
-                        <button>{"Order Up"}</button>
-                        <button>{"Pass"}</button>
+                        <button onclick={order_up_callback}>{"Order Up"}</button>
+                        <button onclick={pass_callback}>{"Pass"}</button>
                     </>
                 }
             } else {

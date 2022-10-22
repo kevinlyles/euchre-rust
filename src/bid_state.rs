@@ -42,9 +42,83 @@ pub enum BidStateKind {
         caller: Player,
         trump: Suit,
     },
+    NoOneCalled,
 }
 
-impl BidState {}
+impl BidState {
+    fn get_active_player(&self) -> Player {
+        match self.phase {
+            BidStateKind::FirstRoundFirstPlayer { .. }
+            | BidStateKind::SecondRoundFirstPlayer { .. }
+            | BidStateKind::Called { .. }
+            | BidStateKind::NoOneCalled => self.dealer.next_player(None, None),
+            BidStateKind::FirstRoundSecondPlayer { .. }
+            | BidStateKind::SecondRoundSecondPlayer { .. } => self.dealer.partner(),
+            BidStateKind::FirstRoundThirdPlayer { .. }
+            | BidStateKind::SecondRoundThirdPlayer { .. } => {
+                self.dealer.partner().next_player(None, None)
+            }
+            BidStateKind::FirstRoundFourthPlayer { .. }
+            | BidStateKind::OrderedUp { .. }
+            | BidStateKind::SecondRoundFourthPlayer { .. } => self.dealer,
+        }
+    }
+
+    pub fn order_it_up(&self) -> Option<BidState> {
+        match self.phase {
+            BidStateKind::FirstRoundFirstPlayer { trump_candidate }
+            | BidStateKind::FirstRoundSecondPlayer { trump_candidate }
+            | BidStateKind::FirstRoundThirdPlayer { trump_candidate }
+            | BidStateKind::FirstRoundFourthPlayer { trump_candidate } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::OrderedUp {
+                    caller: self.get_active_player(),
+                    trump_candidate,
+                },
+            }),
+            _ => None,
+        }
+    }
+    pub fn pass(&self) -> Option<BidState> {
+        match self.phase {
+            BidStateKind::FirstRoundFirstPlayer { trump_candidate } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::FirstRoundSecondPlayer { trump_candidate },
+            }),
+            BidStateKind::FirstRoundSecondPlayer { trump_candidate } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::FirstRoundThirdPlayer { trump_candidate },
+            }),
+            BidStateKind::FirstRoundThirdPlayer { trump_candidate } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::FirstRoundFourthPlayer { trump_candidate },
+            }),
+            BidStateKind::FirstRoundFourthPlayer { trump_candidate } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::SecondRoundFirstPlayer {
+                    forbidden_suit: trump_candidate.suit,
+                },
+            }),
+            BidStateKind::SecondRoundFirstPlayer { forbidden_suit } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::SecondRoundSecondPlayer { forbidden_suit },
+            }),
+            BidStateKind::SecondRoundSecondPlayer { forbidden_suit } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::SecondRoundThirdPlayer { forbidden_suit },
+            }),
+            BidStateKind::SecondRoundThirdPlayer { forbidden_suit } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::SecondRoundFourthPlayer { forbidden_suit },
+            }),
+            BidStateKind::SecondRoundFourthPlayer { .. } => Some(BidState {
+                dealer: self.dealer,
+                phase: BidStateKind::NoOneCalled,
+            }),
+            _ => None,
+        }
+    }
+}
 
 impl IntoPropValue<Option<CardProps>> for &BidState {
     fn into_prop_value(self) -> Option<CardProps> {
@@ -64,7 +138,8 @@ impl IntoPropValue<Option<CardProps>> for &BidState {
             | BidStateKind::Called {
                 caller: _,
                 trump: _,
-            } => None,
+            }
+            | BidStateKind::NoOneCalled => None,
         }
     }
 }
