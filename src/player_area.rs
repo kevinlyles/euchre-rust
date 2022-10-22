@@ -4,6 +4,7 @@ use crate::{
     bid_controls::BidControls,
     bid_state::BidState,
     hand::{Hand, HandProps},
+    hand_state::HandState,
     player::Player,
 };
 
@@ -21,5 +22,6 @@ pub fn player_area(props: &PlayerAreaProps) -> Html {
 pub struct PlayerAreaProps {
     pub player: Player,
     pub hand: HandProps,
+    pub hand_state: UseStateHandle<HandState>,
     pub bid_state: UseStateHandle<Option<BidState>>,
 }

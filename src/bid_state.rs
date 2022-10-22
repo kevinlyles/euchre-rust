@@ -1,5 +1,3 @@
-use yew::html::IntoPropValue;
-
 use crate::{card::CardProps, player::Player, suit::Suit};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -64,7 +62,7 @@ pub enum BidStateKind {
 }
 
 impl BidState {
-    fn get_active_player(&self) -> Player {
+    pub fn get_active_player(&self) -> Player {
         match self.phase {
             BidStateKind::FirstRoundFirstPlayer { .. }
             | BidStateKind::SecondRoundFirstPlayer { .. }
@@ -119,6 +117,40 @@ impl BidState {
             _ => None,
         }
     }
+
+    pub fn call(
+        &self,
+        trump: Suit,
+        alone: bool,
+        defending_alone: Option<Player>,
+    ) -> Option<BidState> {
+        match self.phase {
+            BidStateKind::SecondRoundFirstPlayer { forbidden_suit }
+            | BidStateKind::SecondRoundSecondPlayer { forbidden_suit }
+            | BidStateKind::SecondRoundThirdPlayer { forbidden_suit }
+            | BidStateKind::SecondRoundFourthPlayer { forbidden_suit }
+                if trump != forbidden_suit =>
+            {
+                let caller = self.get_active_player();
+                Some(BidState {
+                    dealer: self.dealer,
+                    phase: match alone {
+                        true => match defending_alone {
+                            Some(defender) => BidStateKind::DefendedAlone {
+                                trump,
+                                caller,
+                                defender,
+                            },
+                            None => BidStateKind::CalledAlone { caller, trump },
+                        },
+                        false => BidStateKind::Called { caller, trump },
+                    },
+                })
+            }
+            _ => None,
+        }
+    }
+
     pub fn pass(&self) -> Option<BidState> {
         match self.phase {
             BidStateKind::FirstRoundFirstPlayer { trump_candidate } => Some(BidState {
@@ -158,10 +190,8 @@ impl BidState {
             _ => None,
         }
     }
-}
 
-impl IntoPropValue<Option<CardProps>> for &BidState {
-    fn into_prop_value(self) -> Option<CardProps> {
+    pub fn get_trump_candidate(self) -> Option<CardProps> {
         match self.phase {
             BidStateKind::FirstRoundFirstPlayer { trump_candidate }
             | BidStateKind::FirstRoundSecondPlayer { trump_candidate }

@@ -2,13 +2,13 @@ use crate::{
     bid_state::BidState, hand::HandProps, player::Player, suit::Suit, trick_state::TrickState,
 };
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct HandState {
     pub dealer: Player,
     pub phase: HandStateKind,
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum HandStateKind {
     Bidding {
         hands: [HandProps; 4],

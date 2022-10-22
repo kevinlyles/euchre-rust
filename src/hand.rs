@@ -6,10 +6,8 @@ pub fn hand(hand: &HandProps) -> Html {
     html! {
         <div>
             {
-                hand.cards
-                    .iter()
+                for hand.cards.iter()
                     .map(|card| html! {if hand.visible {<Card ..*card/>} else { <CardBack/>}})
-                    .collect::<Html>()
             }
         </div>
     }

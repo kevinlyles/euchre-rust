@@ -1,30 +1,38 @@
 use yew::prelude::*;
 
 use crate::{
-    card::{Card, CardBack, CardProps},
+    bid_state::BidState,
+    card::{Card, CardBack},
     player::Player,
 };
 
 #[function_component(PlayingSurface)]
 pub fn playing_surface(props: &PlayingSurfaceProps) -> Html {
-    let class = match props.dealer {
-        Player::Left => "left",
-        Player::Top => "top",
-        Player::Right => "right",
-        Player::Bottom => "bottom",
+    let class = match props.bid_state {
+        Some(bid_state) => match bid_state.dealer {
+            Player::Left => "left",
+            Player::Top => "top",
+            Player::Right => "right",
+            Player::Bottom => "bottom",
+        },
+        None => "",
     };
     html! {
         <div class={class}>
-            {match props.trump_candidate {
-                Some(card) =>html!{<Card ..card />},
-                None => html!{<CardBack />},
-            }}
+            {
+                match props.bid_state {
+                    Some(bid_state) => match bid_state.get_trump_candidate() {
+                        Some(card) => html!{<Card ..card />},
+                        None => html!{<CardBack />},
+                    },
+                    None => html!{},
+                }
+            }
         </div>
     }
 }
 
 #[derive(PartialEq, Properties)]
 pub struct PlayingSurfaceProps {
-    pub dealer: Player,
-    pub trump_candidate: Option<CardProps>,
+    pub bid_state: Option<BidState>,
 }

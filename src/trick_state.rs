@@ -1,6 +1,6 @@
 use crate::{card::CardProps, player::Player, suit::Suit};
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum TrickState {
     Start {
         leader: Player,
