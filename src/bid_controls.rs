@@ -1,15 +1,16 @@
 use enum_iterator::IntoEnumIterator;
-use yew::prelude::*;
+use yew::{callback, prelude::*};
 
 use crate::{
     bid_state::{BidState, BidStateKind},
+    hand::Hand,
     player::Player,
     suit::Suit,
 };
 
 #[function_component(BidControls)]
 pub fn bid_controls(props: &BidControlsProps) -> Html {
-    match *props.bid_state {
+    match (*props.bid_state).clone() {
         Some(state) => {
             match state.phase {
                 BidStateKind::FirstRoundFirstPlayer { .. }
@@ -39,11 +40,14 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                             None => (),
                         }
                     });
+                    let label = if state.dealer == props.player {
+                        "Pick Up"
+                    } else {
+                        "Order Up"
+                    };
                     html! {
                         <>
-                            <button onclick={order_up_callback}>{
-                                if state_2.dealer == props.player {"Pick Up"} else {"Order Up"}
-                            }</button>
+                            <button onclick={order_up_callback}>{label }</button>
                             <button onclick={pass_callback}>{"Pass"}</button>
                         </>
                     }
@@ -95,6 +99,37 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                         <>
                             {for suit_buttons}
                             {pass_button}
+                        </>
+                    }
+                }
+                BidStateKind::OrderedUp {
+                    trump_candidate,
+                    caller,
+                }
+                | BidStateKind::OrderedUpAlone {
+                    trump_candidate,
+                    caller,
+                }
+                | BidStateKind::OrderedUpDefendedAlone {
+                    trump_candidate,
+                    caller,
+                    defender: _,
+                } if props.player == state.dealer => {
+                    let hand = state.hands[state.dealer];
+                    let bid_state = props.bid_state.clone();
+                    let callback = Callback::from(|card| {
+                        let new_state = state.discard(card);
+                        match new_state {
+                            Some(_) => {
+                                bid_state.set(new_state);
+                            }
+                            None => (),
+                        }
+                    });
+                    html! {
+                        <>
+                            <span>{"Choose discard:"}</span>
+                            <Hand hand={hand} callback={callback} visible={true}/>
                         </>
                     }
                 }

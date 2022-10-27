@@ -8,7 +8,7 @@ use crate::{
 
 #[function_component(PlayingSurface)]
 pub fn playing_surface(props: &PlayingSurfaceProps) -> Html {
-    let class = match props.bid_state {
+    let class = match props.bid_state.clone() {
         Some(bid_state) => match bid_state.dealer {
             Player::Left => "left",
             Player::Top => "top",
@@ -20,9 +20,9 @@ pub fn playing_surface(props: &PlayingSurfaceProps) -> Html {
     html! {
         <div class={class}>
             {
-                match props.bid_state {
+                match props.bid_state.clone() {
                     Some(bid_state) => match bid_state.get_trump_candidate() {
-                        Some(card) => html!{<Card ..card />},
+                        Some(card) => html!{<Card card={card} />},
                         None => html!{<CardBack />},
                     },
                     None => html!{},

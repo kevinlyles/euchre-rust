@@ -1,35 +1,35 @@
-use crate::{card::CardProps, player::Player, suit::Suit};
+use crate::{card::CardLogic, player::Player, suit::Suit};
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct BidState {
     pub dealer: Player,
     pub phase: BidStateKind,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum BidStateKind {
     FirstRoundFirstPlayer {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
     },
     FirstRoundSecondPlayer {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
     },
     FirstRoundThirdPlayer {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
     },
     FirstRoundFourthPlayer {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
     },
     OrderedUp {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
         caller: Player,
     },
     OrderedUpAlone {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
         caller: Player,
     },
     OrderedUpDefendedAlone {
-        trump_candidate: CardProps,
+        trump_candidate: CardLogic,
         caller: Player,
         defender: Player,
     },
@@ -191,7 +191,7 @@ impl BidState {
         }
     }
 
-    pub fn get_trump_candidate(self) -> Option<CardProps> {
+    pub fn get_trump_candidate(&self) -> Option<CardLogic> {
         match self.phase {
             BidStateKind::FirstRoundFirstPlayer { trump_candidate }
             | BidStateKind::FirstRoundSecondPlayer { trump_candidate }
@@ -201,6 +201,31 @@ impl BidState {
                 caller: _,
                 trump_candidate,
             } => Some(trump_candidate),
+            _ => None,
+        }
+    }
+
+    pub fn discard(&self, card: CardLogic) -> Option<BidState> {
+        match self.phase {
+            BidStateKind::OrderedUp {
+                trump_candidate,
+                caller,
+            } => {
+                todo!()
+            }
+            BidStateKind::OrderedUpAlone {
+                trump_candidate,
+                caller,
+            } => {
+                todo!()
+            }
+            BidStateKind::OrderedUpDefendedAlone {
+                trump_candidate,
+                caller,
+                defender,
+            } => {
+                todo!()
+            }
             _ => None,
         }
     }
