@@ -103,16 +103,10 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                         </>
                     }
                 }
-                BidStateKind::OrderedUp {
-                    trump_candidate,
-                    caller,
-                }
-                | BidStateKind::OrderedUpAlone {
-                    trump_candidate,
-                    caller,
-                }
+                BidStateKind::OrderedUp { trump, caller }
+                | BidStateKind::OrderedUpAlone { trump, caller }
                 | BidStateKind::OrderedUpDefendedAlone {
-                    trump_candidate,
+                    trump,
                     caller,
                     defender: _,
                 } if props.player == state.dealer => {
@@ -131,7 +125,6 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                         <>
                             <span>{"Choose discard:"}</span>
                             <Hand hand={hand.clone()} callback={callback.clone()} visible={true}/>
-                            <Card card={trump_candidate} callback={callback} />
                         </>
                     }
                 }

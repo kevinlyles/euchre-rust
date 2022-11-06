@@ -22,16 +22,16 @@ pub enum BidStateKind {
         trump_candidate: CardLogic,
     },
     OrderedUp {
-        trump_candidate: CardLogic,
         caller: Player,
+        trump: Suit,
     },
     OrderedUpAlone {
-        trump_candidate: CardLogic,
         caller: Player,
+        trump: Suit,
     },
     OrderedUpDefendedAlone {
-        trump_candidate: CardLogic,
         caller: Player,
+        trump: Suit,
         defender: Player,
     },
     SecondRoundFirstPlayer {
@@ -96,22 +96,22 @@ impl BidState {
                 let caller = self.get_active_player();
                 Some(BidState {
                     dealer: self.dealer,
-                    hands: self.hands.clone(),
+                    hands: get_ordered_up_hands(self.hands.clone(), &self.dealer, trump_candidate),
                     phase: match alone {
                         true => match defending_alone {
                             Some(defender) => BidStateKind::OrderedUpDefendedAlone {
-                                trump_candidate,
                                 caller,
+                                trump: trump_candidate.suit,
                                 defender,
                             },
                             None => BidStateKind::OrderedUpAlone {
-                                trump_candidate,
                                 caller,
+                                trump: trump_candidate.suit,
                             },
                         },
                         false => BidStateKind::OrderedUp {
-                            trump_candidate,
                             caller,
+                            trump: trump_candidate.suit,
                         },
                     },
                 })
@@ -207,37 +207,55 @@ impl BidState {
             BidStateKind::FirstRoundFirstPlayer { trump_candidate }
             | BidStateKind::FirstRoundSecondPlayer { trump_candidate }
             | BidStateKind::FirstRoundThirdPlayer { trump_candidate }
-            | BidStateKind::FirstRoundFourthPlayer { trump_candidate }
-            | BidStateKind::OrderedUp {
-                caller: _,
-                trump_candidate,
-            } => Some(trump_candidate),
+            | BidStateKind::FirstRoundFourthPlayer { trump_candidate } => Some(trump_candidate),
             _ => None,
         }
     }
 
     pub fn discard(&self, card: CardLogic) -> Option<BidState> {
         match self.phase {
-            BidStateKind::OrderedUp {
-                trump_candidate,
-                caller,
-            } => {
-                todo!()
+            BidStateKind::OrderedUp { trump, caller }
+                if self.hands[self.dealer.index()].cards.contains(&card) =>
+            {
+                Some(BidState {
+                    dealer: self.dealer,
+                    hands: discard_card(self.hands.clone(), &self.dealer, &card),
+                    phase: BidStateKind::Called { caller, trump },
+                })
             }
-            BidStateKind::OrderedUpAlone {
-                trump_candidate,
-                caller,
-            } => {
-                todo!()
-            }
+            BidStateKind::OrderedUpAlone { trump, caller } => Some(BidState {
+                dealer: self.dealer,
+                hands: discard_card(self.hands.clone(), &self.dealer, &card),
+                phase: BidStateKind::CalledAlone { caller, trump },
+            }),
             BidStateKind::OrderedUpDefendedAlone {
-                trump_candidate,
+                trump,
                 caller,
                 defender,
-            } => {
-                todo!()
-            }
+            } => Some(BidState {
+                dealer: self.dealer,
+                hands: discard_card(self.hands.clone(), &self.dealer, &card),
+                phase: BidStateKind::DefendedAlone {
+                    trump,
+                    caller,
+                    defender,
+                },
+            }),
             _ => None,
         }
     }
+}
+
+fn discard_card(mut hands: [HandLogic; 4], dealer: &Player, discard: &CardLogic) -> [HandLogic; 4] {
+    hands[dealer.index()].cards.retain(|card| card != discard);
+    hands
+}
+
+fn get_ordered_up_hands(
+    mut hands: [HandLogic; 4],
+    dealer: &Player,
+    trump_candidate: CardLogic,
+) -> [HandLogic; 4] {
+    hands[dealer.index()].cards.push(trump_candidate);
+    hands
 }
