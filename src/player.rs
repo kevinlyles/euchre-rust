@@ -7,6 +7,15 @@ pub enum Player {
 }
 
 impl Player {
+    pub fn index(&self) -> usize {
+        match self {
+            Self::Left => 0,
+            Self::Top => 1,
+            Self::Right => 2,
+            Self::Bottom => 3,
+        }
+    }
+
     pub fn partner(&self) -> Player {
         match self {
             Self::Left => Self::Right,

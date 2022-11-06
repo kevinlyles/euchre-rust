@@ -3,6 +3,7 @@ use yew::{callback, prelude::*};
 
 use crate::{
     bid_state::{BidState, BidStateKind},
+    card::{Card, CardLogic},
     hand::Hand,
     player::Player,
     suit::Suit,
@@ -115,9 +116,9 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                     caller,
                     defender: _,
                 } if props.player == state.dealer => {
-                    let hand = state.hands[state.dealer];
+                    let hand = state.hands[state.dealer.index()].clone();
                     let bid_state = props.bid_state.clone();
-                    let callback = Callback::from(|card| {
+                    let callback = Callback::from(move |card: CardLogic| {
                         let new_state = state.discard(card);
                         match new_state {
                             Some(_) => {
@@ -129,7 +130,8 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                     html! {
                         <>
                             <span>{"Choose discard:"}</span>
-                            <Hand hand={hand} callback={callback} visible={true}/>
+                            <Hand hand={hand.clone()} callback={callback.clone()} visible={true}/>
+                            <Card card={trump_candidate} callback={callback} />
                         </>
                     }
                 }

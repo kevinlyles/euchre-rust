@@ -15,7 +15,7 @@ pub fn card(props: &CardProps) -> Html {
 #[function_component(CardBack)]
 pub fn card_back() -> Html {
     html! {
-        <span class="blue">{"\u{1F0A0}"}</span>
+        <span class="card-back">{"\u{1F0A0}"}</span>
     }
 }
 

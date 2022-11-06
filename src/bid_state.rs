@@ -1,8 +1,9 @@
-use crate::{card::CardLogic, player::Player, suit::Suit};
+use crate::{card::CardLogic, hand::HandLogic, player::Player, suit::Suit};
 
 #[derive(Clone, PartialEq)]
 pub struct BidState {
     pub dealer: Player,
+    pub hands: [HandLogic; 4],
     pub phase: BidStateKind,
 }
 
@@ -95,6 +96,7 @@ impl BidState {
                 let caller = self.get_active_player();
                 Some(BidState {
                     dealer: self.dealer,
+                    hands: self.hands.clone(),
                     phase: match alone {
                         true => match defending_alone {
                             Some(defender) => BidStateKind::OrderedUpDefendedAlone {
@@ -134,6 +136,7 @@ impl BidState {
                 let caller = self.get_active_player();
                 Some(BidState {
                     dealer: self.dealer,
+                    hands: self.hands.clone(),
                     phase: match alone {
                         true => match defending_alone {
                             Some(defender) => BidStateKind::DefendedAlone {
@@ -155,36 +158,44 @@ impl BidState {
         match self.phase {
             BidStateKind::FirstRoundFirstPlayer { trump_candidate } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::FirstRoundSecondPlayer { trump_candidate },
             }),
             BidStateKind::FirstRoundSecondPlayer { trump_candidate } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::FirstRoundThirdPlayer { trump_candidate },
             }),
             BidStateKind::FirstRoundThirdPlayer { trump_candidate } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::FirstRoundFourthPlayer { trump_candidate },
             }),
             BidStateKind::FirstRoundFourthPlayer { trump_candidate } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::SecondRoundFirstPlayer {
                     forbidden_suit: trump_candidate.suit,
                 },
             }),
             BidStateKind::SecondRoundFirstPlayer { forbidden_suit } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::SecondRoundSecondPlayer { forbidden_suit },
             }),
             BidStateKind::SecondRoundSecondPlayer { forbidden_suit } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::SecondRoundThirdPlayer { forbidden_suit },
             }),
             BidStateKind::SecondRoundThirdPlayer { forbidden_suit } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::SecondRoundFourthPlayer { forbidden_suit },
             }),
             BidStateKind::SecondRoundFourthPlayer { .. } => Some(BidState {
                 dealer: self.dealer,
+                hands: self.hands.clone(),
                 phase: BidStateKind::NoOneCalled,
             }),
             _ => None,

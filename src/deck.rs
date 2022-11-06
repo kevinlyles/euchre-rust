@@ -62,9 +62,10 @@ impl Deck {
             hand_state: HandState {
                 dealer,
                 phase: HandStateKind::Bidding {
-                    hands,
+                    hands: hands.clone(),
                     bid_state: BidState {
                         dealer,
+                        hands,
                         phase: BidStateKind::FirstRoundFirstPlayer {
                             trump_candidate: self.cards.pop().unwrap(),
                         },

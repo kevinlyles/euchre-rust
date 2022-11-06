@@ -7,7 +7,7 @@ pub fn hand(props: &HandProps) -> Html {
         <div>
             {
                 for props.hand.cards.iter()
-                    .map(|card| html! {if props.visible || cfg!(show_all_cards) {<Card card={*card}/>} else { <CardBack/>}})
+                    .map(|card| html! {if props.visible || cfg!(show_all_cards) {<Card card={*card} callback={props.callback.clone()}/>} else { <CardBack/>}})
             }
         </div>
     }
