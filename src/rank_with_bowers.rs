@@ -1,7 +1,7 @@
 use crate::{rank::Rank, suit::Suit};
 use enum_iterator::IntoEnumIterator;
 
-#[derive(Copy, Clone, IntoEnumIterator, PartialEq)]
+#[derive(Copy, Clone, IntoEnumIterator, PartialEq, Debug)]
 pub enum RankWithBowers {
     RightBower,
     LeftBower,

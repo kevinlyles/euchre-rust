@@ -46,7 +46,7 @@ impl PartialEq for HandProps {
 }
 */
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct HandLogic {
     pub cards: Vec<CardLogic>,
 }

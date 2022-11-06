@@ -1,13 +1,13 @@
 use crate::{card::CardLogic, hand::HandLogic, player::Player, suit::Suit};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct BidState {
     pub dealer: Player,
     pub hands: [HandLogic; 4],
     pub phase: BidStateKind,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum BidStateKind {
     FirstRoundFirstPlayer {
         trump_candidate: CardLogic,

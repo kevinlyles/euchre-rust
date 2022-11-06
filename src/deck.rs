@@ -62,7 +62,6 @@ impl Deck {
             hand_state: HandState {
                 dealer,
                 phase: HandStateKind::Bidding {
-                    hands: hands.clone(),
                     bid_state: BidState {
                         dealer,
                         hands,

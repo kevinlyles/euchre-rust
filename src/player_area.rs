@@ -13,7 +13,7 @@ pub fn player_area(props: &PlayerAreaProps) -> Html {
     html! {
         <>
             <Hand ..props.hand.clone() />
-            <BidControls player={props.player} bid_state={props.bid_state.clone()} />
+            <BidControls player={props.player} bid_state={props.bid_state.clone()} done_bidding_callback={props.done_bidding_callback.clone()} />
         </>
     }
 }
@@ -24,4 +24,5 @@ pub struct PlayerAreaProps {
     pub hand: HandProps,
     pub hand_state: UseStateHandle<HandState>,
     pub bid_state: UseStateHandle<Option<BidState>>,
+    pub done_bidding_callback: Callback<bool>,
 }

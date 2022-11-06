@@ -1,6 +1,7 @@
 use crate::euchre::*;
 
 mod bid_controls;
+mod bid_result;
 mod bid_state;
 mod card;
 mod deck;

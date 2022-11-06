@@ -65,12 +65,16 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                             .map(|suit| {
                                 let bid_state = props.bid_state.clone();
                                 let state = state.clone();
+                                let callback = props.done_bidding_callback.clone();
                                 let callback = Callback::from(move |_| {
                                     let new_state;
                                     //TODO: allow alone and defending alone
                                     new_state = state.call(suit, false, None);
                                     match new_state {
-                                        Some(_) => bid_state.set(new_state),
+                                        Some(_) => {
+                                            bid_state.set(new_state);
+                                            callback.emit(true);
+                                        },
                                         None => (),
                                     }
                                 });
@@ -112,11 +116,14 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                 } if props.player == state.dealer => {
                     let hand = state.hands[state.dealer.index()].clone();
                     let bid_state = props.bid_state.clone();
+                    let callback = props.done_bidding_callback.clone();
                     let callback = Callback::from(move |card: CardLogic| {
                         let new_state = state.discard(card);
                         match new_state {
                             Some(_) => {
                                 bid_state.set(new_state);
+                                callback.emit(true);
+                                panic!("Made it to callback in discard")
                             }
                             None => (),
                         }
@@ -139,4 +146,5 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
 pub struct BidControlsProps {
     pub player: Player,
     pub bid_state: UseStateHandle<Option<BidState>>,
+    pub done_bidding_callback: Callback<bool>,
 }

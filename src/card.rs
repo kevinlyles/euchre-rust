@@ -26,7 +26,7 @@ pub struct CardProps {
     pub callback: Callback<CardLogic>,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CardLogic {
     pub suit: Suit,
     pub rank: RankWithBowers,
