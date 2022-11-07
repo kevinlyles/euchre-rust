@@ -1,11 +1,13 @@
+use yew::Callback;
+
 use crate::{bid_result::BidResult, card::CardLogic, hand::HandLogic, player::Player, suit::Suit};
 
 pub struct BidState {
     pub dealer: Player,
     pub hands: [HandLogic; 4],
     pub phase: BidPhase,
-    update_in_parent: Box<dyn FnMut(BidState) -> ()>,
-    finish: Box<dyn FnMut(BidResult) -> ()>,
+    update_callback: Box<dyn FnMut(BidState) -> ()>,
+    finished_callback: Box<dyn FnMut(BidResult) -> ()>,
 }
 
 impl PartialEq for BidState {
@@ -74,15 +76,15 @@ impl BidState {
         dealer: Player,
         hands: [HandLogic; 4],
         trump_candidate: CardLogic,
-        update_in_parent: Box<dyn FnMut(BidState) -> ()>,
-        finish: Box<dyn FnMut(BidResult) -> ()>,
+        update_callback: Box<dyn FnMut(BidState) -> ()>,
+        finished_callback: Box<dyn FnMut(BidResult) -> ()>,
     ) -> Box<BidState> {
         Box::new(BidState {
             dealer,
             hands,
             phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
-            update_in_parent,
-            finish,
+            update_callback,
+            finished_callback,
         })
     }
 
@@ -110,7 +112,65 @@ impl BidState {
         }
     }
 
-    pub fn order_it_up(&mut self, alone: bool, defending_alone: Option<Player>) -> () {
+    pub fn get_trump_candidate(&self) -> Option<CardLogic> {
+        match self.phase {
+            BidPhase::FirstRoundFirstPlayer { trump_candidate }
+            | BidPhase::FirstRoundSecondPlayer { trump_candidate }
+            | BidPhase::FirstRoundThirdPlayer { trump_candidate }
+            | BidPhase::FirstRoundFourthPlayer { trump_candidate } => Some(trump_candidate),
+            _ => None,
+        }
+    }
+
+    pub fn pass(&mut self) -> bool {
+        match self.phase {
+            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
+                self.phase = BidPhase::FirstRoundSecondPlayer { trump_candidate };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
+                self.phase = BidPhase::FirstRoundThirdPlayer { trump_candidate };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::FirstRoundThirdPlayer { trump_candidate } => {
+                self.phase = BidPhase::FirstRoundFourthPlayer { trump_candidate };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::FirstRoundFourthPlayer { trump_candidate } => {
+                self.phase = BidPhase::SecondRoundFirstPlayer {
+                    forbidden_suit: trump_candidate.suit,
+                };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::SecondRoundFirstPlayer { forbidden_suit } => {
+                self.phase = BidPhase::SecondRoundSecondPlayer { forbidden_suit };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::SecondRoundSecondPlayer { forbidden_suit } => {
+                self.phase = BidPhase::SecondRoundThirdPlayer { forbidden_suit };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::SecondRoundThirdPlayer { forbidden_suit } => {
+                self.phase = BidPhase::SecondRoundFourthPlayer { forbidden_suit };
+                (self.update_callback)(*self);
+                true
+            }
+            BidPhase::SecondRoundFourthPlayer { .. } => {
+                self.phase = BidPhase::NoOneCalled;
+                (self.update_callback)(*self);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    pub fn order_it_up(&mut self, alone: bool, defending_alone: Option<Player>) -> bool {
         match self.phase {
             BidPhase::FirstRoundFirstPlayer { trump_candidate }
             | BidPhase::FirstRoundSecondPlayer { trump_candidate }
@@ -133,13 +193,61 @@ impl BidState {
                         caller,
                         trump: trump_candidate.suit,
                     },
-                }
+                };
+                (self.update_callback)(*self);
+                true
             }
-            _ => (),
+            _ => false,
         }
     }
 
-    pub fn call(&mut self, trump: Suit, alone: bool, defending_alone: Option<Player>) -> () {
+    pub fn discard(&mut self, card: CardLogic) -> bool {
+        match self.phase {
+            BidPhase::OrderedUp { trump, caller }
+                if self.hands[self.dealer.index()].cards.contains(&card) =>
+            {
+                self.phase = BidPhase::Called { caller, trump };
+                (self.finished_callback)(BidResult {
+                    caller,
+                    trump,
+                    called_alone: false,
+                    defender: None,
+                });
+                true
+            }
+            BidPhase::OrderedUpAlone { trump, caller } => {
+                BidPhase::CalledAlone { caller, trump };
+                (self.finished_callback)(BidResult {
+                    caller,
+                    trump,
+                    called_alone: true,
+                    defender: None,
+                });
+                true
+            }
+            BidPhase::OrderedUpDefendedAlone {
+                trump,
+                caller,
+                defender,
+            } => {
+                self.phase = BidPhase::DefendedAlone {
+                    trump,
+                    caller,
+                    defender,
+                };
+                (self.finished_callback)(BidResult {
+                    caller,
+                    trump,
+                    called_alone: true,
+                    defender: Some(defender),
+                });
+                true
+            }
+            _ => false,
+        }
+    }
+
+    pub fn call(&mut self, trump: Suit, alone: bool, defending_alone: Option<Player>) -> bool {
         match self.phase {
             BidPhase::SecondRoundFirstPlayer { forbidden_suit }
             | BidPhase::SecondRoundSecondPlayer { forbidden_suit }
@@ -158,70 +266,10 @@ impl BidState {
                         None => BidPhase::CalledAlone { caller, trump },
                     },
                     false => BidPhase::Called { caller, trump },
-                }
+                };
+                true
             }
-            _ => (),
-        }
-    }
-
-    pub fn pass(&mut self) -> () {
-        self.phase = match self.phase {
-            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
-                BidPhase::FirstRoundSecondPlayer { trump_candidate }
-            }
-            BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
-                BidPhase::FirstRoundThirdPlayer { trump_candidate }
-            }
-            BidPhase::FirstRoundThirdPlayer { trump_candidate } => {
-                BidPhase::FirstRoundFourthPlayer { trump_candidate }
-            }
-            BidPhase::FirstRoundFourthPlayer { trump_candidate } => {
-                BidPhase::SecondRoundFirstPlayer {
-                    forbidden_suit: trump_candidate.suit,
-                }
-            }
-            BidPhase::SecondRoundFirstPlayer { forbidden_suit } => {
-                BidPhase::SecondRoundSecondPlayer { forbidden_suit }
-            }
-            BidPhase::SecondRoundSecondPlayer { forbidden_suit } => {
-                BidPhase::SecondRoundThirdPlayer { forbidden_suit }
-            }
-            BidPhase::SecondRoundThirdPlayer { forbidden_suit } => {
-                BidPhase::SecondRoundFourthPlayer { forbidden_suit }
-            }
-            BidPhase::SecondRoundFourthPlayer { .. } => BidPhase::NoOneCalled,
-            _ => self.phase,
-        }
-    }
-
-    pub fn get_trump_candidate(&self) -> Option<CardLogic> {
-        match self.phase {
-            BidPhase::FirstRoundFirstPlayer { trump_candidate }
-            | BidPhase::FirstRoundSecondPlayer { trump_candidate }
-            | BidPhase::FirstRoundThirdPlayer { trump_candidate }
-            | BidPhase::FirstRoundFourthPlayer { trump_candidate } => Some(trump_candidate),
-            _ => None,
-        }
-    }
-
-    pub fn discard(&mut self, card: CardLogic) -> () {
-        self.phase = match self.phase {
-            BidPhase::OrderedUp { trump, caller }
-                if self.hands[self.dealer.index()].cards.contains(&card) =>
-            {
-                BidPhase::Called { caller, trump }
-            }
-            BidPhase::OrderedUpAlone { trump, caller } => BidPhase::CalledAlone { caller, trump },
-            BidPhase::OrderedUpDefendedAlone {
-                trump,
-                caller,
-                defender,
-            } => BidPhase::DefendedAlone {
-                trump,
-                caller,
-                defender,
-            },
-            _ => self.phase,
+            _ => false,
         }
     }
 }

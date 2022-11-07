@@ -3,11 +3,16 @@ use crate::{
     trick_state::TrickState,
 };
 
-#[derive(PartialEq)]
 pub struct HandState {
     pub dealer: Player,
     pub phase: HandPhase,
-    pub update_in_parent: fn(HandState) -> (),
+    update_in_parent: Box<dyn FnMut(HandState) -> ()>,
+}
+
+impl PartialEq for HandState {
+    fn eq(&self, other: &Self) -> bool {
+        self.dealer == other.dealer && self.phase == other.phase
+    }
 }
 
 #[derive(PartialEq)]
@@ -55,7 +60,7 @@ impl HandState {
         dealer: Player,
         hands: [HandLogic; 4],
         trump_candidate: CardLogic,
-        update_in_parent: fn(HandState) -> (),
+        update_in_parent: Box<dyn FnMut(HandState) -> ()>,
     ) -> HandState {
         let mut state = HandState {
             dealer,

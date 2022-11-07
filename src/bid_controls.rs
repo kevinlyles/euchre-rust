@@ -2,7 +2,6 @@ use enum_iterator::IntoEnumIterator;
 use yew::prelude::*;
 
 use crate::{
-    bid_result::BidResult,
     bid_state::{BidPhase, BidState},
     card::CardLogic,
     hand::Hand,
@@ -10,24 +9,54 @@ use crate::{
     suit::Suit,
 };
 
-#[function_component(BidControls)]
-pub fn bid_controls(props: &BidControlsProps) -> Html {
-    match props.bid_state {
-        Some(state) => {
-            match state.phase {
+#[derive(PartialEq, Properties)]
+pub struct BidControlsProps {
+    pub player: Player,
+    pub bid_state: Option<Box<BidState>>,
+}
+
+enum Message {
+    Pass,
+    OrderUp {
+        alone: bool,
+        defender: Option<Player>,
+    },
+    Discard {
+        card: CardLogic,
+    },
+    Call {
+        trump: Suit,
+        alone: bool,
+        defender: Option<Player>,
+    },
+}
+
+pub struct BidControls;
+
+impl Component for BidControls {
+    type Message = Message;
+
+    type Properties = BidControlsProps;
+
+    fn create(ctx: &Context<Self>) -> Self {
+        Self
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        match props.bid_state {
+            Some(state) => match state.phase {
                 BidPhase::FirstRoundFirstPlayer { .. }
                 | BidPhase::FirstRoundSecondPlayer { .. }
                 | BidPhase::FirstRoundThirdPlayer { .. }
                 | BidPhase::FirstRoundFourthPlayer { .. }
                     if state.get_active_player() == props.player =>
                 {
-                    let order_up_callback = Callback::from(|_| {
-                        //TODO: allow alone and defending alone
-                        state.order_it_up(false, None);
+                    let order_up_callback = ctx.link().callback(|_| Message::OrderUp {
+                        alone: false,
+                        defender: None,
                     });
-                    let pass_callback = Callback::from(|_| {
-                        state.pass();
-                    });
+                    let pass_callback = ctx.link().callback(|_| Message::Pass);
                     let label = if state.dealer == props.player {
                         "Pick Up"
                     } else {
@@ -35,7 +64,7 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                     };
                     html! {
                         <>
-                            <button onclick={order_up_callback}>{label }</button>
+                            <button onclick={order_up_callback}>{label}</button>
                             <button onclick={pass_callback}>{"Pass"}</button>
                         </>
                     }
@@ -50,19 +79,14 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                         Suit::into_enum_iter()
                             .filter(|suit|suit != &forbidden_suit)
                             .map(|suit| {
-                                let callback = Callback::from( |_| {
-                                    //TODO: allow alone and defending alone
-                                    state.call(suit, false, None);
-                                });
+                                let callback = ctx.link().callback( |_| Message::Call { trump: suit, alone: false, defender: None });
                                 html! {
                                     <span onclick={callback} class={suit.color()}>{suit.to_string()}</span>
                                 }
                             })
                     };
                     let pass_button = {
-                        let callback = Callback::from(|_| {
-                            state.pass();
-                        });
+                        let callback = ctx.link().callback(|_| Message::Pass);
                         html! {
                             <>
                                 <button onclick={callback}>{"Pass"}</button>
@@ -90,25 +114,35 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                     defender: _,
                 } if props.player == state.dealer => {
                     let hand = state.hands[state.dealer.index()].clone();
-                    let callback = Callback::from(|card: CardLogic| {
-                        state.discard(card);
-                    });
+                    let callback = ctx
+                        .link()
+                        .callback(|card: CardLogic| Message::Discard { card });
                     html! {
                         <>
                             <span>{"Choose discard:"}</span>
-                            <Hand hand={hand.clone()} callback={callback.clone()} visible={true}/>
+                            <Hand hand={hand} callback={callback} visible={true}/>
                         </>
                     }
                 }
                 _ => html! {},
-            }
+            },
+            None => html! {},
         }
-        None => html! {},
     }
-}
 
-#[derive(PartialEq, Properties)]
-pub struct BidControlsProps {
-    pub player: Player,
-    pub bid_state: Option<Box<BidState>>,
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match ctx.props().bid_state {
+            Some(bid_state) => match msg {
+                Message::Pass => bid_state.pass(),
+                Message::OrderUp { alone, defender } => bid_state.order_it_up(alone, defender),
+                Message::Discard { card } => bid_state.discard(card),
+                Message::Call {
+                    trump,
+                    alone,
+                    defender,
+                } => bid_state.call(trump, alone, defender),
+            },
+            None => false,
+        }
+    }
 }
