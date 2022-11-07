@@ -2,6 +2,7 @@ use yew::prelude::*;
 
 use crate::{
     bid_controls::BidControls,
+    bid_result::BidResult,
     bid_state::BidState,
     hand::{Hand, HandProps},
     hand_state::HandState,
@@ -23,6 +24,6 @@ pub struct PlayerAreaProps {
     pub player: Player,
     pub hand: HandProps,
     pub hand_state: UseStateHandle<HandState>,
-    pub bid_state: Option<UseStateHandle<BidState>>,
-    pub done_bidding_callback: Callback<bool>,
+    pub bid_state: Option<UseStateHandle<Box<BidState>>>,
+    pub done_bidding_callback: Callback<BidResult>,
 }

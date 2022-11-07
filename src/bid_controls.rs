@@ -2,7 +2,8 @@ use enum_iterator::IntoEnumIterator;
 use yew::prelude::*;
 
 use crate::{
-    bid_state::{BidState, BidStateKind},
+    bid_result::BidResult,
+    bid_state::{BidPhase, BidState},
     card::CardLogic,
     hand::Hand,
     player::Player,
@@ -11,33 +12,21 @@ use crate::{
 
 #[function_component(BidControls)]
 pub fn bid_controls(props: &BidControlsProps) -> Html {
-    match props.bid_state.clone() {
+    match props.bid_state {
         Some(state) => {
             match state.phase {
-                BidStateKind::FirstRoundFirstPlayer { .. }
-                | BidStateKind::FirstRoundSecondPlayer { .. }
-                | BidStateKind::FirstRoundThirdPlayer { .. }
-                | BidStateKind::FirstRoundFourthPlayer { .. }
+                BidPhase::FirstRoundFirstPlayer { .. }
+                | BidPhase::FirstRoundSecondPlayer { .. }
+                | BidPhase::FirstRoundThirdPlayer { .. }
+                | BidPhase::FirstRoundFourthPlayer { .. }
                     if state.get_active_player() == props.player =>
                 {
-                    let state_1 = state.clone();
-                    let order_up_callback = Callback::from(move |_| {
-                        let new_state;
+                    let order_up_callback = Callback::from(|_| {
                         //TODO: allow alone and defending alone
-                        new_state = state_1.order_it_up(false, None);
-                        match new_state {
-                            Some(new_state) => state_1.set(new_state),
-                            None => (),
-                        }
+                        state.order_it_up(false, None);
                     });
-                    let state_2 = state.clone();
-                    let pass_callback = Callback::from(move |_| {
-                        let new_state;
-                        new_state = state_2.pass();
-                        match new_state {
-                            Some(new_state) => state_2.set(new_state),
-                            None => (),
-                        }
+                    let pass_callback = Callback::from(|_| {
+                        state.pass();
                     });
                     let label = if state.dealer == props.player {
                         "Pick Up"
@@ -51,29 +40,19 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                         </>
                     }
                 }
-                BidStateKind::SecondRoundFirstPlayer { forbidden_suit }
-                | BidStateKind::SecondRoundSecondPlayer { forbidden_suit }
-                | BidStateKind::SecondRoundThirdPlayer { forbidden_suit }
-                | BidStateKind::SecondRoundFourthPlayer { forbidden_suit }
+                BidPhase::SecondRoundFirstPlayer { forbidden_suit }
+                | BidPhase::SecondRoundSecondPlayer { forbidden_suit }
+                | BidPhase::SecondRoundThirdPlayer { forbidden_suit }
+                | BidPhase::SecondRoundFourthPlayer { forbidden_suit }
                     if state.get_active_player() == props.player =>
                 {
                     let suit_buttons = {
                         Suit::into_enum_iter()
                             .filter(|suit|suit != &forbidden_suit)
                             .map(|suit| {
-                                let state = state.clone();
-                                let callback = props.done_bidding_callback.clone();
-                                let callback = Callback::from(move |_| {
-                                    let new_state;
+                                let callback = Callback::from( |_| {
                                     //TODO: allow alone and defending alone
-                                    new_state = state.call(suit, false, None);
-                                    match new_state {
-                                        Some(new_state) => {
-                                            state.set(new_state);
-                                            callback.emit(true);
-                                    },
-                                        None => (),
-                                    }
+                                    state.call(suit, false, None);
                                 });
                                 html! {
                                     <span onclick={callback} class={suit.color()}>{suit.to_string()}</span>
@@ -81,14 +60,8 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                             })
                     };
                     let pass_button = {
-                        let state = state.clone();
-                        let callback = Callback::from(move |_| {
-                            let new_state;
-                            new_state = state.pass();
-                            match new_state {
-                                Some(new_state) => state.set(new_state),
-                                None => (),
-                            }
+                        let callback = Callback::from(|_| {
+                            state.pass();
                         });
                         html! {
                             <>
@@ -103,30 +76,22 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
                         </>
                     }
                 }
-                BidStateKind::OrderedUp {
+                BidPhase::OrderedUp {
                     trump: _,
                     caller: _,
                 }
-                | BidStateKind::OrderedUpAlone {
+                | BidPhase::OrderedUpAlone {
                     trump: _,
                     caller: _,
                 }
-                | BidStateKind::OrderedUpDefendedAlone {
+                | BidPhase::OrderedUpDefendedAlone {
                     trump: _,
                     caller: _,
                     defender: _,
                 } if props.player == state.dealer => {
                     let hand = state.hands[state.dealer.index()].clone();
-                    let callback = props.done_bidding_callback.clone();
-                    let callback = Callback::from(move |card: CardLogic| {
-                        let new_state = state.discard(card);
-                        match new_state {
-                            Some(new_state) => {
-                                state.set(new_state);
-                                callback.emit(true);
-                            }
-                            None => (),
-                        }
+                    let callback = Callback::from(|card: CardLogic| {
+                        state.discard(card);
                     });
                     html! {
                         <>
@@ -145,6 +110,5 @@ pub fn bid_controls(props: &BidControlsProps) -> Html {
 #[derive(PartialEq, Properties)]
 pub struct BidControlsProps {
     pub player: Player,
-    pub bid_state: Option<UseStateHandle<BidState>>,
-    pub done_bidding_callback: Callback<bool>,
+    pub bid_state: Option<Box<BidState>>,
 }

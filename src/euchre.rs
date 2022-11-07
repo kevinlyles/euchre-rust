@@ -1,10 +1,10 @@
 use std::ops::Deref;
 
-use crate::bid_state::{BidState, BidStateKind};
+use crate::bid_state::{BidState, BidPhase};
 use crate::deck::*;
 use crate::game_state::GameState;
 use crate::hand::HandProps;
-use crate::hand_state::{HandState, HandStateKind};
+use crate::hand_state::{HandState, HandPhase};
 use crate::player::Player;
 use crate::player_area::PlayerArea;
 use crate::playing_surface::PlayingSurface;
@@ -16,18 +16,18 @@ pub fn euchre() -> Html {
     let bid_state = use_state_eq(|| BidState {
         dealer: Player::Bottom,
         hands,
-        phase: BidStateKind::FirstRoundFirstPlayer { trump_candidate },
+        phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
     });
     let game_state = use_state_eq(|| GameState {
         hand_state: HandState {
             dealer: Player::Bottom,
-            phase: HandStateKind::Bidding { bid_state },
+            phase: HandPhase::Bidding { bid_state },
         },
     });
     let hand_state = use_state_eq(|| game_state.hand_state.clone());
     match &game_state.hand_state.phase {
-        HandStateKind::Scoring { tricks_taken: _ } => html! {<div>{"To do!"}</div>},
-        HandStateKind::Bidding { bid_state } => {
+        HandPhase::Scoring { tricks_taken: _ } => html! {<div>{"To do!"}</div>},
+        HandPhase::Bidding { bid_state } => {
             let game_state_1 = game_state.clone();
             let hand_state_1 = hand_state.clone();
             let done_bidding_callback =
@@ -77,30 +77,30 @@ pub fn euchre() -> Html {
                </div>
             }
         }
-        HandStateKind::FirstTrick {
+        HandPhase::FirstTrick {
             bid_result: _,
             hands,
             trick_state: _,
         }
-        | HandStateKind::SecondTrick {
-            bid_result: _,
-            hands,
-            trick_state: _,
-            tricks_taken: _,
-        }
-        | HandStateKind::ThirdTrick {
+        | HandPhase::SecondTrick {
             bid_result: _,
             hands,
             trick_state: _,
             tricks_taken: _,
         }
-        | HandStateKind::FourthTrick {
+        | HandPhase::ThirdTrick {
             bid_result: _,
             hands,
             trick_state: _,
             tricks_taken: _,
         }
-        | HandStateKind::FifthTrick {
+        | HandPhase::FourthTrick {
+            bid_result: _,
+            hands,
+            trick_state: _,
+            tricks_taken: _,
+        }
+        | HandPhase::FifthTrick {
             bid_result: _,
             hands,
             trick_state: _,
