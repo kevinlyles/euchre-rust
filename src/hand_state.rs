@@ -1,9 +1,10 @@
+use yew::UseStateHandle;
+
 use crate::{
     bid_result::BidResult,
     bid_state::{BidState, BidStateKind},
     hand::HandLogic,
     player::Player,
-    suit::Suit,
     trick_state::TrickState,
 };
 
@@ -16,7 +17,7 @@ pub struct HandState {
 #[derive(Clone, PartialEq)]
 pub enum HandStateKind {
     Bidding {
-        bid_state: BidState,
+        bid_state: UseStateHandle<BidState>,
     },
     FirstTrick {
         bid_result: BidResult,

@@ -23,6 +23,6 @@ pub struct PlayerAreaProps {
     pub player: Player,
     pub hand: HandProps,
     pub hand_state: UseStateHandle<HandState>,
-    pub bid_state: UseStateHandle<Option<BidState>>,
+    pub bid_state: Option<UseStateHandle<BidState>>,
     pub done_bidding_callback: Callback<bool>,
 }
