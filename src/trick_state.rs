@@ -1,9 +1,11 @@
+use yew::Callback;
+
 use crate::{card::CardProps, player::Player, suit::Suit};
 
 pub struct TrickState {
     pub phase: TrickPhase,
-    update_in_parent: Box<dyn FnMut(TrickState) -> ()>,
-    finish: Box<dyn FnMut(Player) -> ()>,
+    update: Callback<bool>,
+    finish: Callback<Player>,
 }
 
 impl PartialEq for TrickState {
@@ -36,14 +38,10 @@ pub enum TrickPhase {
 }
 
 impl TrickState {
-    pub fn create(
-        leader: Player,
-        update_in_parent: Box<dyn FnMut(TrickState) -> ()>,
-        finish: Box<dyn FnMut(Player) -> ()>,
-    ) -> TrickState {
+    pub fn create(leader: Player, update: Callback<bool>, finish: Callback<Player>) -> TrickState {
         TrickState {
             phase: TrickPhase::Start { leader },
-            update_in_parent,
+            update,
             finish,
         }
     }

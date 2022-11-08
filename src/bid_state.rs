@@ -2,21 +2,16 @@ use yew::Callback;
 
 use crate::{bid_result::BidResult, card::CardLogic, hand::HandLogic, player::Player, suit::Suit};
 
+#[derive(Clone, PartialEq)]
 pub struct BidState {
     pub dealer: Player,
     pub hands: [HandLogic; 4],
     pub phase: BidPhase,
-    update_callback: Box<dyn FnMut(BidState) -> ()>,
-    finished_callback: Box<dyn FnMut(BidResult) -> ()>,
+    update_callback: Callback<bool>,
+    finished_callback: Callback<BidResult>,
 }
 
-impl PartialEq for BidState {
-    fn eq(&self, other: &Self) -> bool {
-        self.dealer == other.dealer && self.hands == other.hands && self.phase == other.phase
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub enum BidPhase {
     FirstRoundFirstPlayer {
         trump_candidate: CardLogic,
@@ -76,16 +71,16 @@ impl BidState {
         dealer: Player,
         hands: [HandLogic; 4],
         trump_candidate: CardLogic,
-        update_callback: Box<dyn FnMut(BidState) -> ()>,
-        finished_callback: Box<dyn FnMut(BidResult) -> ()>,
-    ) -> Box<BidState> {
-        Box::new(BidState {
+        update_callback: Callback<bool>,
+        finished_callback: Callback<BidResult>,
+    ) -> BidState {
+        BidState {
             dealer,
             hands,
             phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
             update_callback,
             finished_callback,
-        })
+        }
     }
 
     pub fn get_active_player(&self) -> Player {
@@ -122,48 +117,60 @@ impl BidState {
         }
     }
 
-    pub fn pass(&mut self) -> bool {
-        match self.phase {
+    pub fn pass(mut self) -> bool {
+        match &self.phase {
             BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
-                self.phase = BidPhase::FirstRoundSecondPlayer { trump_candidate };
-                (self.update_callback)(*self);
+                self.phase = BidPhase::FirstRoundSecondPlayer {
+                    trump_candidate: *trump_candidate,
+                };
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
-                self.phase = BidPhase::FirstRoundThirdPlayer { trump_candidate };
-                (self.update_callback)(*self);
+                self.phase = BidPhase::FirstRoundThirdPlayer {
+                    trump_candidate: *trump_candidate,
+                };
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::FirstRoundThirdPlayer { trump_candidate } => {
-                self.phase = BidPhase::FirstRoundFourthPlayer { trump_candidate };
-                (self.update_callback)(*self);
+                self.phase = BidPhase::FirstRoundFourthPlayer {
+                    trump_candidate: *trump_candidate,
+                };
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::FirstRoundFourthPlayer { trump_candidate } => {
                 self.phase = BidPhase::SecondRoundFirstPlayer {
                     forbidden_suit: trump_candidate.suit,
                 };
-                (self.update_callback)(*self);
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::SecondRoundFirstPlayer { forbidden_suit } => {
-                self.phase = BidPhase::SecondRoundSecondPlayer { forbidden_suit };
-                (self.update_callback)(*self);
+                self.phase = BidPhase::SecondRoundSecondPlayer {
+                    forbidden_suit: *forbidden_suit,
+                };
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::SecondRoundSecondPlayer { forbidden_suit } => {
-                self.phase = BidPhase::SecondRoundThirdPlayer { forbidden_suit };
-                (self.update_callback)(*self);
+                self.phase = BidPhase::SecondRoundThirdPlayer {
+                    forbidden_suit: *forbidden_suit,
+                };
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::SecondRoundThirdPlayer { forbidden_suit } => {
-                self.phase = BidPhase::SecondRoundFourthPlayer { forbidden_suit };
-                (self.update_callback)(*self);
+                self.phase = BidPhase::SecondRoundFourthPlayer {
+                    forbidden_suit: *forbidden_suit,
+                };
+                self.update_callback.emit(true);
                 true
             }
             BidPhase::SecondRoundFourthPlayer { .. } => {
                 self.phase = BidPhase::NoOneCalled;
-                (self.update_callback)(*self);
+                self.update_callback.emit(true);
                 true
             }
             _ => false,
@@ -194,7 +201,7 @@ impl BidState {
                         trump: trump_candidate.suit,
                     },
                 };
-                (self.update_callback)(*self);
+                self.update_callback.emit(true);
                 true
             }
             _ => false,
@@ -207,7 +214,7 @@ impl BidState {
                 if self.hands[self.dealer.index()].cards.contains(&card) =>
             {
                 self.phase = BidPhase::Called { caller, trump };
-                (self.finished_callback)(BidResult {
+                self.finished_callback.emit(BidResult {
                     caller,
                     trump,
                     called_alone: false,
@@ -217,7 +224,7 @@ impl BidState {
             }
             BidPhase::OrderedUpAlone { trump, caller } => {
                 BidPhase::CalledAlone { caller, trump };
-                (self.finished_callback)(BidResult {
+                self.finished_callback.emit(BidResult {
                     caller,
                     trump,
                     called_alone: true,
@@ -235,7 +242,7 @@ impl BidState {
                     caller,
                     defender,
                 };
-                (self.finished_callback)(BidResult {
+                self.finished_callback.emit(BidResult {
                     caller,
                     trump,
                     called_alone: true,

@@ -12,7 +12,12 @@ pub fn player_area(props: &PlayerAreaProps) -> Html {
     html! {
         <>
             <Hand ..props.hand.clone() />
-            <BidControls player={props.player} bid_state={props.bid_state} />
+            {match props.bid_state {
+                Some(bid_state) => html! {
+                    <BidControls player={props.player} bid_state={bid_state} />
+                },
+                None => html!{},
+            }}
         </>
     }
 }
@@ -21,5 +26,5 @@ pub fn player_area(props: &PlayerAreaProps) -> Html {
 pub struct PlayerAreaProps {
     pub player: Player,
     pub hand: HandProps,
-    pub bid_state: Option<Box<BidState>>,
+    pub bid_state: Option<BidState>,
 }

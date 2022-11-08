@@ -34,5 +34,5 @@ pub fn playing_surface(props: &PlayingSurfaceProps) -> Html {
 
 #[derive(PartialEq, Properties)]
 pub struct PlayingSurfaceProps {
-    pub bid_state: Option<Box<BidState>>,
+    pub bid_state: Option<BidState>,
 }

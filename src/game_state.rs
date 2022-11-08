@@ -36,8 +36,19 @@ impl GameState {
     fn update_hand_state(&mut self, hand_state: HandState) -> () {
         match self.phase {
             GamePhase::Initializing => (),
+            GamePhase::Playing { hand_state } => {
+                self.phase = GamePhase::Playing { hand_state };
+                self.update.emit(*self)
+            }
+            GamePhase::Done => (),
+        }
+    }
+
+    fn finish_hand(&mut self, tricks_taken: [u8; 4]) -> () {
+        match self.phase {
+            GamePhase::Initializing => (),
             //TODO: handle hand ending, updating score, etc.
-            GamePhase::Playing { hand_state } => self.phase = GamePhase::Playing { hand_state },
+            GamePhase::Playing { hand_state } => self.update.emit(*self),
             GamePhase::Done => (),
         }
     }

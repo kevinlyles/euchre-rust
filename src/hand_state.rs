@@ -1,3 +1,5 @@
+use yew::Callback;
+
 use crate::{
     bid_result::BidResult, bid_state::BidState, card::CardLogic, hand::HandLogic, player::Player,
     trick_state::TrickState,
@@ -6,7 +8,7 @@ use crate::{
 pub struct HandState {
     pub dealer: Player,
     pub phase: HandPhase,
-    update_in_parent: Box<dyn FnMut(HandState) -> ()>,
+    update: Callback<bool>,
 }
 
 impl PartialEq for HandState {
@@ -19,7 +21,7 @@ impl PartialEq for HandState {
 pub enum HandPhase {
     Initializing,
     Bidding {
-        bid_state: Box<BidState>,
+        bid_state: BidState,
     },
     FirstTrick {
         bid_result: BidResult,
@@ -60,20 +62,20 @@ impl HandState {
         dealer: Player,
         hands: [HandLogic; 4],
         trump_candidate: CardLogic,
-        update_in_parent: Box<dyn FnMut(HandState) -> ()>,
+        update: Callback<bool>,
     ) -> HandState {
         let mut state = HandState {
             dealer,
             phase: HandPhase::Initializing,
-            update_in_parent,
+            update,
         };
         state.phase = HandPhase::Bidding {
             bid_state: BidState::create(
                 dealer,
                 hands,
                 trump_candidate,
-                Box::new(|bid_state| state.update_bid_state(bid_state)),
-                Box::new(|bid_result| state.finish_bidding(bid_result)),
+                Callback::from(|value| state.update.emit(value)),
+                Callback::from(|bid_result| state.finish_bidding(bid_result)),
             ),
         };
         state
@@ -83,7 +85,7 @@ impl HandState {
         self.phase = HandPhase::Bidding {
             bid_state: Box::new(bid_state),
         };
-        (self.update_in_parent)(*self);
+        self.update.emit(true);
     }
 
     pub fn finish_bidding(&mut self, bid_result: BidResult) -> () {
