@@ -1,11 +1,7 @@
-use yew::Callback;
-
-use crate::{card::CardProps, player::Player, suit::Suit};
+use crate::{card::CardLogic, player::Player, suit::Suit};
 
 pub struct TrickState {
     pub phase: TrickPhase,
-    update: Callback<bool>,
-    finish: Callback<Player>,
 }
 
 impl PartialEq for TrickState {
@@ -21,28 +17,26 @@ pub enum TrickPhase {
     },
     FirstCardPlayed {
         suit_lead: Suit,
-        cards_played: [CardProps; 1],
+        cards_played: [CardLogic; 1],
     },
     SecondCardPlayed {
         suit_lead: Suit,
-        cards_played: [CardProps; 2],
+        cards_played: [CardLogic; 2],
     },
     ThirdCardPlayed {
         suit_lead: Suit,
-        cards_played: [CardProps; 3],
+        cards_played: [CardLogic; 3],
     },
     FourthCardPlayed {
         suit_lead: Suit,
-        cards_played: [CardProps; 4],
+        cards_played: [CardLogic; 4],
     },
 }
 
 impl TrickState {
-    pub fn create(leader: Player, update: Callback<bool>, finish: Callback<Player>) -> TrickState {
+    pub fn create(leader: Player) -> TrickState {
         TrickState {
             phase: TrickPhase::Start { leader },
-            update,
-            finish,
         }
     }
 }

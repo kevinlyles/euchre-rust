@@ -1,5 +1,3 @@
-use yew::Callback;
-
 use crate::{
     bid_result::BidResult, bid_state::BidState, card::CardLogic, hand::HandLogic, player::Player,
     trick_state::TrickState,
@@ -8,7 +6,6 @@ use crate::{
 pub struct HandState {
     pub dealer: Player,
     pub phase: HandPhase,
-    update: Callback<bool>,
 }
 
 impl PartialEq for HandState {
@@ -58,121 +55,37 @@ pub enum HandPhase {
 }
 
 impl HandState {
-    pub fn create(
-        dealer: Player,
-        hands: [HandLogic; 4],
-        trump_candidate: CardLogic,
-        update: Callback<bool>,
-    ) -> HandState {
+    pub fn create(dealer: Player, hands: [HandLogic; 4], trump_candidate: CardLogic) -> HandState {
         let mut state = HandState {
             dealer,
             phase: HandPhase::Initializing,
-            update,
         };
         state.phase = HandPhase::Bidding {
-            bid_state: BidState::create(
-                dealer,
-                hands,
-                trump_candidate,
-                Callback::from(|value| state.update.emit(value)),
-                Callback::from(|bid_result| state.finish_bidding(bid_result)),
-            ),
+            bid_state: BidState::create(dealer, hands, trump_candidate),
         };
         state
     }
 
     fn update_bid_state(&mut self, bid_state: BidState) {
         self.phase = HandPhase::Bidding {
-            bid_state: Box::new(bid_state),
+            bid_state: bid_state,
         };
-        self.update.emit(true);
     }
 
     pub fn finish_bidding(&mut self, bid_result: BidResult) -> () {
-        match self.phase {
+        match &self.phase {
             HandPhase::Bidding { bid_state } => {
                 self.phase = HandPhase::FirstTrick {
-                    bid_result,
-                    hands: bid_state.hands,
-                    trick_state: TrickState::create(
-                        self.dealer.next_player(
-                            if bid_result.called_alone {
-                                Some(bid_result.caller)
-                            } else {
-                                None
-                            },
-                            bid_result.defender,
-                        ),
-                        Box::new(|trick_state| self.update_trick_state(trick_state)),
-                        Box::new(|trick_winner| self.trick_finished(trick_winner)),
-                    ),
-                }
-            }
-            _ => (),
-        }
-    }
-
-    fn update_trick_state(&mut self, trick_state: TrickState) -> () {
-        match self.phase {
-            HandPhase::FirstTrick {
-                bid_result, hands, ..
-            } => {
-                self.phase = HandPhase::FirstTrick {
-                    bid_result,
-                    hands,
-                    trick_state,
-                }
-            }
-            HandPhase::SecondTrick {
-                bid_result,
-                hands,
-                tricks_taken,
-                ..
-            } => {
-                self.phase = HandPhase::SecondTrick {
-                    bid_result,
-                    hands,
-                    trick_state,
-                    tricks_taken,
-                }
-            }
-            HandPhase::ThirdTrick {
-                bid_result,
-                hands,
-                tricks_taken,
-                ..
-            } => {
-                self.phase = HandPhase::ThirdTrick {
-                    bid_result,
-                    hands,
-                    trick_state,
-                    tricks_taken,
-                }
-            }
-            HandPhase::FourthTrick {
-                bid_result,
-                hands,
-                tricks_taken,
-                ..
-            } => {
-                self.phase = HandPhase::FourthTrick {
-                    bid_result,
-                    hands,
-                    trick_state,
-                    tricks_taken,
-                }
-            }
-            HandPhase::FifthTrick {
-                bid_result,
-                hands,
-                tricks_taken,
-                ..
-            } => {
-                self.phase = HandPhase::FifthTrick {
-                    bid_result,
-                    hands,
-                    trick_state,
-                    tricks_taken,
+                    bid_result: bid_result.clone(),
+                    hands: bid_state.hands.clone(),
+                    trick_state: TrickState::create(self.dealer.next_player(
+                        if bid_result.called_alone {
+                            Some(bid_result.caller)
+                        } else {
+                            None
+                        },
+                        bid_result.defender,
+                    )),
                 }
             }
             _ => (),
@@ -180,18 +93,16 @@ impl HandState {
     }
 
     fn trick_finished(&mut self, trick_winner: Player) -> () {
-        let update_in_parent = Box::new(|trick_state| self.update_trick_state(trick_state));
-        let finish = Box::new(|trick_winner| self.trick_finished(trick_winner));
-        match self.phase {
+        match &mut self.phase {
             HandPhase::FirstTrick {
                 bid_result, hands, ..
             } => {
-                let tricks_taken = [0u8; 4];
+                let mut tricks_taken = [0u8; 4];
                 tricks_taken[trick_winner.index()] += 1;
                 self.phase = HandPhase::SecondTrick {
-                    bid_result,
-                    hands,
-                    trick_state: TrickState::create(trick_winner, update_in_parent, finish),
+                    bid_result: bid_result.clone(),
+                    hands: hands.clone(),
+                    trick_state: TrickState::create(trick_winner),
                     tricks_taken,
                 }
             }
@@ -203,10 +114,10 @@ impl HandState {
             } => {
                 tricks_taken[trick_winner.index()] += 1;
                 self.phase = HandPhase::ThirdTrick {
-                    bid_result,
-                    hands,
-                    trick_state: TrickState::create(trick_winner, update_in_parent, finish),
-                    tricks_taken,
+                    bid_result: bid_result.clone(),
+                    hands: hands.clone(),
+                    trick_state: TrickState::create(trick_winner),
+                    tricks_taken: *tricks_taken,
                 }
             }
             HandPhase::ThirdTrick {
@@ -217,10 +128,10 @@ impl HandState {
             } => {
                 tricks_taken[trick_winner.index()] += 1;
                 self.phase = HandPhase::FourthTrick {
-                    bid_result,
-                    hands,
-                    trick_state: TrickState::create(trick_winner, update_in_parent, finish),
-                    tricks_taken,
+                    bid_result: bid_result.clone(),
+                    hands: hands.clone(),
+                    trick_state: TrickState::create(trick_winner),
+                    tricks_taken: *tricks_taken,
                 }
             }
             HandPhase::FourthTrick {
@@ -231,10 +142,10 @@ impl HandState {
             } => {
                 tricks_taken[trick_winner.index()] += 1;
                 self.phase = HandPhase::FifthTrick {
-                    bid_result,
-                    hands,
-                    trick_state: TrickState::create(trick_winner, update_in_parent, finish),
-                    tricks_taken,
+                    bid_result: bid_result.clone(),
+                    hands: hands.clone(),
+                    trick_state: TrickState::create(trick_winner),
+                    tricks_taken: *tricks_taken,
                 }
             }
             HandPhase::FifthTrick {
@@ -244,7 +155,9 @@ impl HandState {
                 ..
             } => {
                 tricks_taken[trick_winner.index()] += 1;
-                self.phase = HandPhase::Scoring { tricks_taken }
+                self.phase = HandPhase::Scoring {
+                    tricks_taken: *tricks_taken,
+                }
             }
             _ => (),
         }

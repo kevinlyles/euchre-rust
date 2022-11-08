@@ -1,30 +1,5 @@
 use crate::{rank_with_bowers::RankWithBowers, suit::Suit};
 use core::fmt;
-use yew::prelude::*;
-
-#[function_component(Card)]
-pub fn card(props: &CardProps) -> Html {
-    let callback = props.callback.clone();
-    let card = props.card;
-    let callback = Callback::from(move |_| callback.emit(card));
-    html! {
-        <span class={props.card.suit.color()} onclick={callback}>{props.card}</span>
-    }
-}
-
-#[function_component(CardBack)]
-pub fn card_back() -> Html {
-    html! {
-        <span class="card-back">{"\u{1F0A0}"}</span>
-    }
-}
-
-#[derive(Clone, Properties, PartialEq)]
-pub struct CardProps {
-    pub card: CardLogic,
-    #[prop_or_default]
-    pub callback: Callback<CardLogic>,
-}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CardLogic {
