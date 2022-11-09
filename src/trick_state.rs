@@ -1,4 +1,4 @@
-use crate::{card::CardLogic, player::Player, suit::Suit};
+use crate::{card::CardLogic, position::Position, suit::Suit};
 
 pub struct TrickState {
     pub phase: TrickPhase,
@@ -13,7 +13,7 @@ impl PartialEq for TrickState {
 #[derive(Clone, PartialEq)]
 pub enum TrickPhase {
     Start {
-        leader: Player,
+        leader: Position,
     },
     FirstCardPlayed {
         suit_lead: Suit,
@@ -34,7 +34,7 @@ pub enum TrickPhase {
 }
 
 impl TrickState {
-    pub fn create(leader: Player) -> TrickState {
+    pub fn create(leader: Position) -> TrickState {
         TrickState {
             phase: TrickPhase::Start { leader },
         }

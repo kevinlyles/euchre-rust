@@ -1,8 +1,10 @@
-use crate::{card::CardLogic, hand::HandLogic, player::Player, suit::Suit};
+use crate::{
+    bid_result::BidResult, card::CardLogic, hand::HandLogic, position::Position, suit::Suit,
+};
 
 #[derive(Clone, PartialEq)]
 pub struct BidState {
-    pub dealer: Player,
+    pub dealer: Position,
     pub hands: [HandLogic; 4],
     pub phase: BidPhase,
 }
@@ -22,17 +24,17 @@ pub enum BidPhase {
         trump_candidate: CardLogic,
     },
     OrderedUp {
-        caller: Player,
+        caller: Position,
         trump: Suit,
     },
     OrderedUpAlone {
-        caller: Player,
+        caller: Position,
         trump: Suit,
     },
     OrderedUpDefendedAlone {
-        caller: Player,
+        caller: Position,
         trump: Suit,
-        defender: Player,
+        defender: Position,
     },
     SecondRoundFirstPlayer {
         forbidden_suit: Suit,
@@ -46,24 +48,13 @@ pub enum BidPhase {
     SecondRoundFourthPlayer {
         forbidden_suit: Suit,
     },
-    Called {
-        caller: Player,
-        trump: Suit,
+    Done {
+        bid_result: BidResult,
     },
-    CalledAlone {
-        caller: Player,
-        trump: Suit,
-    },
-    DefendedAlone {
-        trump: Suit,
-        caller: Player,
-        defender: Player,
-    },
-    NoOneCalled,
 }
 
 impl BidState {
-    pub fn create(dealer: Player, hands: [HandLogic; 4], trump_candidate: CardLogic) -> BidState {
+    pub fn create(dealer: Position, hands: [HandLogic; 4], trump_candidate: CardLogic) -> BidState {
         BidState {
             dealer,
             hands,
@@ -71,7 +62,28 @@ impl BidState {
         }
     }
 
-    pub fn get_active_player(&self) -> Player {
+    pub fn step(&mut self) -> Option<BidResult> {
+        match &mut self.phase {
+            BidPhase::FirstRoundFirstPlayer { trump_candidate } => todo!(),
+            BidPhase::FirstRoundSecondPlayer { trump_candidate } => todo!(),
+            BidPhase::FirstRoundThirdPlayer { trump_candidate } => todo!(),
+            BidPhase::FirstRoundFourthPlayer { trump_candidate } => todo!(),
+            BidPhase::OrderedUp { caller, trump } => todo!(),
+            BidPhase::OrderedUpAlone { caller, trump } => todo!(),
+            BidPhase::OrderedUpDefendedAlone {
+                caller,
+                trump,
+                defender,
+            } => todo!(),
+            BidPhase::SecondRoundFirstPlayer { forbidden_suit } => todo!(),
+            BidPhase::SecondRoundSecondPlayer { forbidden_suit } => todo!(),
+            BidPhase::SecondRoundThirdPlayer { forbidden_suit } => todo!(),
+            BidPhase::SecondRoundFourthPlayer { forbidden_suit } => todo!(),
+            BidPhase::Done { bid_result } => todo!(),
+        }
+    }
+
+    pub fn get_active_player(&self) -> Position {
         match self.phase {
             BidPhase::FirstRoundFirstPlayer { .. }
             | BidPhase::SecondRoundFirstPlayer { .. }
@@ -157,7 +169,7 @@ impl BidState {
         }
     }
 
-    pub fn order_it_up(&mut self, alone: bool, defending_alone: Option<Player>) -> bool {
+    pub fn order_it_up(&mut self, alone: bool, defending_alone: Option<Position>) -> bool {
         match self.phase {
             BidPhase::FirstRoundFirstPlayer { trump_candidate }
             | BidPhase::FirstRoundSecondPlayer { trump_candidate }
@@ -240,7 +252,7 @@ impl BidState {
         }
     }
 
-    pub fn call(&mut self, trump: Suit, alone: bool, defending_alone: Option<Player>) -> bool {
+    pub fn call(&mut self, trump: Suit, alone: bool, defending_alone: Option<Position>) -> bool {
         match self.phase {
             BidPhase::SecondRoundFirstPlayer { forbidden_suit }
             | BidPhase::SecondRoundSecondPlayer { forbidden_suit }
@@ -267,14 +279,18 @@ impl BidState {
     }
 }
 
-fn discard_card(mut hands: [HandLogic; 4], dealer: &Player, discard: &CardLogic) -> [HandLogic; 4] {
+fn discard_card(
+    mut hands: [HandLogic; 4],
+    dealer: &Position,
+    discard: &CardLogic,
+) -> [HandLogic; 4] {
     hands[dealer.index()].cards.retain(|card| card != discard);
     hands
 }
 
 fn get_ordered_up_hands(
     mut hands: [HandLogic; 4],
-    dealer: &Player,
+    dealer: &Position,
     trump_candidate: CardLogic,
 ) -> [HandLogic; 4] {
     hands[dealer.index()].cards.push(trump_candidate);

@@ -1,10 +1,10 @@
 use crate::{
-    bid_result::BidResult, bid_state::BidState, card::CardLogic, hand::HandLogic, player::Player,
-    trick_state::TrickState,
+    bid_result::BidResult, bid_state::BidState, card::CardLogic, hand::HandLogic,
+    position::Position, trick_state::TrickState,
 };
 
 pub struct HandState {
-    pub dealer: Player,
+    pub dealer: Position,
     pub phase: HandPhase,
 }
 
@@ -16,7 +16,6 @@ impl PartialEq for HandState {
 
 #[derive(PartialEq)]
 pub enum HandPhase {
-    Initializing,
     Bidding {
         bid_state: BidState,
     },
@@ -55,21 +54,53 @@ pub enum HandPhase {
 }
 
 impl HandState {
-    pub fn create(dealer: Player, hands: [HandLogic; 4], trump_candidate: CardLogic) -> HandState {
-        let mut state = HandState {
+    pub fn create(
+        dealer: Position,
+        hands: [HandLogic; 4],
+        trump_candidate: CardLogic,
+    ) -> HandState {
+        HandState {
             dealer,
-            phase: HandPhase::Initializing,
-        };
-        state.phase = HandPhase::Bidding {
-            bid_state: BidState::create(dealer, hands, trump_candidate),
-        };
-        state
+            phase: HandPhase::Bidding {
+                bid_state: BidState::create(dealer, hands, trump_candidate),
+            },
+        }
     }
 
-    fn update_bid_state(&mut self, bid_state: BidState) {
-        self.phase = HandPhase::Bidding {
-            bid_state: bid_state,
-        };
+    pub fn step(&mut self) -> Option<[u8; 4]> {
+        match &mut self.phase {
+            HandPhase::Bidding { bid_state } => match bid_state.step() {},
+            HandPhase::FirstTrick {
+                bid_result,
+                hands,
+                trick_state,
+            } => todo!(),
+            HandPhase::SecondTrick {
+                bid_result,
+                hands,
+                trick_state,
+                tricks_taken,
+            } => todo!(),
+            HandPhase::ThirdTrick {
+                bid_result,
+                hands,
+                trick_state,
+                tricks_taken,
+            } => todo!(),
+            HandPhase::FourthTrick {
+                bid_result,
+                hands,
+                trick_state,
+                tricks_taken,
+            } => todo!(),
+            HandPhase::FifthTrick {
+                bid_result,
+                hands,
+                trick_state,
+                tricks_taken,
+            } => todo!(),
+            HandPhase::Scoring { tricks_taken } => todo!(),
+        }
     }
 
     pub fn finish_bidding(&mut self, bid_result: BidResult) -> () {
@@ -92,7 +123,7 @@ impl HandState {
         }
     }
 
-    fn trick_finished(&mut self, trick_winner: Player) -> () {
+    fn trick_finished(&mut self, trick_winner: Position) -> () {
         match &mut self.phase {
             HandPhase::FirstTrick {
                 bid_result, hands, ..
