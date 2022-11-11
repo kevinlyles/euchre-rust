@@ -1,15 +1,13 @@
 use crate::{
-    bid_result::BidResult, card::CardLogic, hand::HandLogic, position::Position, suit::Suit,
+    bid_result::BidResult, card::CardLogic, hand::HandLogic, player::Player, position::Position,
+    suit::Suit,
 };
 
-#[derive(Clone, PartialEq)]
 pub struct BidState {
     pub dealer: Position,
-    pub hands: [HandLogic; 4],
     pub phase: BidPhase,
 }
 
-#[derive(Clone, PartialEq)]
 pub enum BidPhase {
     FirstRoundFirstPlayer {
         trump_candidate: CardLogic,
@@ -54,15 +52,14 @@ pub enum BidPhase {
 }
 
 impl BidState {
-    pub fn create(dealer: Position, hands: [HandLogic; 4], trump_candidate: CardLogic) -> BidState {
+    pub fn create(dealer: Position, trump_candidate: CardLogic) -> BidState {
         BidState {
             dealer,
-            hands,
             phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
         }
     }
 
-    pub fn step(&mut self) -> Option<BidResult> {
+    pub fn step(&mut self, players: &mut [Box<dyn Player>; 4]) -> Option<BidResult> {
         match &mut self.phase {
             BidPhase::FirstRoundFirstPlayer { trump_candidate } => todo!(),
             BidPhase::FirstRoundSecondPlayer { trump_candidate } => todo!(),
@@ -79,31 +76,27 @@ impl BidState {
             BidPhase::SecondRoundSecondPlayer { forbidden_suit } => todo!(),
             BidPhase::SecondRoundThirdPlayer { forbidden_suit } => todo!(),
             BidPhase::SecondRoundFourthPlayer { forbidden_suit } => todo!(),
-            BidPhase::Done { bid_result } => todo!(),
+            BidPhase::Done { bid_result } => Some(bid_result.clone()),
         }
     }
 
     pub fn get_active_player(&self) -> Position {
-        match self.phase {
-            BidPhase::FirstRoundFirstPlayer { .. }
-            | BidPhase::SecondRoundFirstPlayer { .. }
-            | BidPhase::Called { .. }
-            | BidPhase::NoOneCalled => self.dealer.next_player(None, None),
+        match &self.phase {
+            BidPhase::FirstRoundFirstPlayer { .. } | BidPhase::SecondRoundFirstPlayer { .. } => {
+                self.dealer.next_position_bidding()
+            }
             BidPhase::FirstRoundSecondPlayer { .. } | BidPhase::SecondRoundSecondPlayer { .. } => {
                 self.dealer.partner()
             }
             BidPhase::FirstRoundThirdPlayer { .. } | BidPhase::SecondRoundThirdPlayer { .. } => {
-                self.dealer.partner().next_player(None, None)
+                self.dealer.partner().next_position_bidding()
             }
             BidPhase::FirstRoundFourthPlayer { .. }
             | BidPhase::OrderedUp { .. }
             | BidPhase::OrderedUpAlone { .. }
             | BidPhase::OrderedUpDefendedAlone { .. }
             | BidPhase::SecondRoundFourthPlayer { .. } => self.dealer,
-            BidPhase::CalledAlone { caller, .. } => self.dealer.next_player(Some(caller), None),
-            BidPhase::DefendedAlone {
-                caller, defender, ..
-            } => self.dealer.next_player(Some(caller), Some(defender)),
+            BidPhase::Done { bid_result } => self.dealer.next_position_playing(&bid_result),
         }
     }
 
@@ -117,6 +110,7 @@ impl BidState {
         }
     }
 
+    /*
     pub fn pass(mut self) -> bool {
         match &self.phase {
             BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
@@ -162,7 +156,9 @@ impl BidState {
                 true
             }
             BidPhase::SecondRoundFourthPlayer { .. } => {
-                self.phase = BidPhase::NoOneCalled;
+                self.phase = BidPhase::Done {
+                    bid_result: BidResult::NoOneCalled,
+                };
                 true
             }
             _ => false,
@@ -204,27 +200,15 @@ impl BidState {
             BidPhase::OrderedUp { trump, caller }
                 if self.hands[self.dealer.index()].cards.contains(&card) =>
             {
-                self.phase = BidPhase::Called { caller, trump };
-                /*
-                self.finished_callback.emit(BidResult {
-                    caller,
-                    trump,
-                    called_alone: false,
-                    defender: None,
-                });
-                */
+                self.phase = BidPhase::Done {
+                    bid_result: BidResult::Called { trump, caller },
+                };
                 true
             }
             BidPhase::OrderedUpAlone { trump, caller } => {
-                BidPhase::CalledAlone { caller, trump };
-                /*
-                self.finished_callback.emit(BidResult {
-                    caller,
-                    trump,
-                    called_alone: true,
-                    defender: None,
-                });
-                */
+                self.phase = BidPhase::Done {
+                    bid_result: BidResult::CalledAlone { trump, caller },
+                };
                 true
             }
             BidPhase::OrderedUpDefendedAlone {
@@ -232,20 +216,13 @@ impl BidState {
                 caller,
                 defender,
             } => {
-                self.phase = BidPhase::DefendedAlone {
-                    trump,
-                    caller,
-                    defender,
+                self.phase = BidPhase::Done {
+                    bid_result: BidResult::DefendedAlone {
+                        trump,
+                        caller,
+                        defender,
+                    },
                 };
-                /*
-                self.finished_callback.emit(BidResult {
-                    caller,
-                    trump,
-                    called_alone: true,
-                    defender: Some(defender),
-                })
-                */
-
                 true
             }
             _ => false,
@@ -263,20 +240,27 @@ impl BidState {
                 let caller = self.get_active_player();
                 self.phase = match alone {
                     true => match defending_alone {
-                        Some(defender) => BidPhase::DefendedAlone {
-                            trump,
-                            caller,
-                            defender,
+                        Some(defender) => BidPhase::Done {
+                            bid_result: BidResult::DefendedAlone {
+                                trump,
+                                caller,
+                                defender,
+                            },
                         },
-                        None => BidPhase::CalledAlone { caller, trump },
+                        None => BidPhase::Done {
+                            bid_result: BidResult::CalledAlone { caller, trump },
+                        },
                     },
-                    false => BidPhase::Called { caller, trump },
+                    false => BidPhase::Done {
+                        bid_result: BidResult::Called { caller, trump },
+                    },
                 };
                 true
             }
             _ => false,
         }
     }
+    */
 }
 
 fn discard_card(

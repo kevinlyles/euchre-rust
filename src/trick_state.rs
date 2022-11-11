@@ -1,20 +1,12 @@
-use crate::{card::CardLogic, position::Position, suit::Suit};
+use crate::{card::CardLogic, hand::HandLogic, player::Player, position::Position, suit::Suit};
 
 pub struct TrickState {
+    leader: Position,
     pub phase: TrickPhase,
 }
 
-impl PartialEq for TrickState {
-    fn eq(&self, other: &Self) -> bool {
-        self.phase == other.phase
-    }
-}
-
-#[derive(Clone, PartialEq)]
 pub enum TrickPhase {
-    Start {
-        leader: Position,
-    },
+    Start,
     FirstCardPlayed {
         suit_lead: Suit,
         cards_played: [CardLogic; 1],
@@ -36,7 +28,16 @@ pub enum TrickPhase {
 impl TrickState {
     pub fn create(leader: Position) -> TrickState {
         TrickState {
-            phase: TrickPhase::Start { leader },
+            leader,
+            phase: TrickPhase::Start,
         }
+    }
+
+    pub fn step(
+        &mut self,
+        players: &mut [Box<dyn Player>; 4],
+        hands: &mut [HandLogic; 4],
+    ) -> Option<Position> {
+        todo!()
     }
 }

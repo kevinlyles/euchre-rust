@@ -1,24 +1,31 @@
-use crate::{deck::Deck, hand_state::HandState, position::Position};
+use crate::{
+    deck::Deck, hand::HandLogic, hand_state::HandState, player::Player, position::Position,
+};
 
-#[derive(PartialEq)]
 pub struct GameState {
+    pub players: [Box<dyn Player>; 4],
     pub phase: GamePhase,
     pub north_south_score: u8,
     pub east_west_score: u8,
 }
 
-#[derive(PartialEq)]
 pub enum GamePhase {
-    Playing { hand_state: HandState },
+    Playing {
+        hand_state: HandState,
+        //TODO: decide where this should actually live
+        hands: [HandLogic; 4],
+    },
     Done,
 }
 
 impl GameState {
-    pub fn create() -> GameState {
+    pub fn create(players: [Box<dyn Player>; 4]) -> GameState {
         let (hands, trump_candidate) = Deck::create_shuffled_deck().deal();
         GameState {
+            players,
             phase: GamePhase::Playing {
-                hand_state: HandState::create(Position::Bottom, hands, trump_candidate),
+                hand_state: HandState::create(Position::Bottom, trump_candidate),
+                hands,
             },
             north_south_score: 0,
             east_west_score: 0,
@@ -27,8 +34,11 @@ impl GameState {
 
     pub fn step(&mut self) -> Option<String> {
         match &mut self.phase {
-            GamePhase::Playing { ref mut hand_state } => {
-                match hand_state.step() {
+            GamePhase::Playing {
+                ref mut hand_state,
+                ref mut hands,
+            } => {
+                match hand_state.step(&mut self.players, hands) {
                     Some(tricks_taken) => self.update_score(tricks_taken),
                     None => (),
                 }

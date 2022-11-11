@@ -1,6 +1,6 @@
 use crate::{position::Position, suit::Suit};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum BidResult {
     Called {
         trump: Suit,

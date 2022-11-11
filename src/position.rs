@@ -1,3 +1,5 @@
+use crate::bid_result::BidResult;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Position {
     Left,
@@ -34,23 +36,22 @@ impl Position {
         }
     }
 
-    pub fn next_player(
-        &self,
-        went_alone: Option<Position>,
-        defended_alone: Option<Position>,
-    ) -> Position {
-        let next_player = self.next();
-        match went_alone {
-            Some(next) if next == next_player.partner() => {
-                next_player.next_player(went_alone, defended_alone)
+    pub fn next_position_bidding(&self) -> Position {
+        self.next()
+    }
+
+    pub fn next_position_playing(&self, bid_result: &BidResult) -> Position {
+        let next_position = self.next();
+        match bid_result {
+            BidResult::CalledAlone { caller, .. } if *caller == next_position.partner() => {
+                next_position.next_position_playing(bid_result)
             }
-            Some(_) => match defended_alone {
-                Some(next) if next == next_player.partner() => {
-                    next_player.next_player(went_alone, defended_alone)
-                }
-                _ => next_player,
-            },
-            _ => next_player,
+            BidResult::DefendedAlone {
+                caller, defender, ..
+            } if *caller == next_position.partner() || *defender == next_position.partner() => {
+                next_position.next_position_playing(bid_result)
+            }
+            _ => next_position,
         }
     }
 }
@@ -58,25 +59,32 @@ impl Position {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::suit::Suit;
     use test_case::test_case;
 
-    #[test_case(Position::Left, None, None => Position::Top)]
-    #[test_case(Position::Left, Some(Position::Right), None => Position::Top)]
-    #[test_case(Position::Left, Some(Position::Top), None => Position::Top)]
-    #[test_case(Position::Left, Some(Position::Bottom), None => Position::Right)]
-    #[test_case(Position::Left, Some(Position::Top), Some(Position::Left) => Position::Top)]
-    #[test_case(Position::Left, Some(Position::Left), Some(Position::Top) => Position::Top)]
-    #[test_case(Position::Left, Some(Position::Bottom), Some(Position::Left) => Position::Bottom)]
-    #[test_case(Position::Left, Some(Position::Left), Some(Position::Bottom) => Position::Bottom)]
-    #[test_case(Position::Left, None, Some(Position::Bottom) => Position::Top)]
-    #[test_case(Position::Top, None, None => Position::Right)]
-    #[test_case(Position::Right, None, None => Position::Bottom)]
-    #[test_case(Position::Bottom, None, None => Position::Left)]
-    fn next_player(
-        player: Position,
-        went_alone: Option<Position>,
-        defended_alone: Option<Position>,
-    ) -> Position {
-        player.next_player(went_alone, defended_alone)
+    #[test_case(Position::Left => Position::Top)]
+    #[test_case(Position::Top => Position::Right)]
+    #[test_case(Position::Right => Position::Bottom)]
+    #[test_case(Position::Bottom => Position::Left)]
+    fn next_position_bidding(player: Position) -> Position {
+        player.next_position_bidding()
+    }
+
+    #[test_case(Position::Left, BidResult::Called { trump: Suit::Hearts, caller: Position::Top } => Position::Top)]
+    #[test_case(Position::Left, BidResult::Called { trump: Suit::Hearts, caller: Position::Right } => Position::Top)]
+    #[test_case(Position::Left, BidResult::Called { trump: Suit::Hearts, caller: Position::Bottom } => Position::Top)]
+    #[test_case(Position::Left, BidResult::Called { trump: Suit::Hearts, caller: Position::Left } => Position::Top)]
+    #[test_case(Position::Left, BidResult::CalledAlone { trump: Suit::Hearts, caller: Position::Right } => Position::Top)]
+    #[test_case(Position::Left, BidResult::CalledAlone { trump: Suit::Hearts, caller: Position::Top } => Position::Top)]
+    #[test_case(Position::Left, BidResult::CalledAlone { trump: Suit::Hearts, caller: Position::Bottom } => Position::Right)]
+    #[test_case(Position::Left, BidResult::DefendedAlone { trump: Suit::Hearts, caller: Position::Top, defender: Position::Left } => Position::Top)]
+    #[test_case(Position::Left, BidResult::DefendedAlone { trump: Suit::Hearts, caller: Position::Left, defender: Position::Top } => Position::Top)]
+    #[test_case(Position::Left, BidResult::DefendedAlone { trump: Suit::Hearts, caller: Position::Bottom, defender: Position::Left } => Position::Bottom)]
+    #[test_case(Position::Left, BidResult::DefendedAlone { trump: Suit::Hearts, caller: Position::Left, defender: Position::Bottom } => Position::Bottom)]
+    #[test_case(Position::Top, BidResult::Called { trump: Suit::Hearts, caller: Position::Top } => Position::Right)]
+    #[test_case(Position::Right, BidResult::Called { trump: Suit::Hearts, caller: Position::Top } => Position::Bottom)]
+    #[test_case(Position::Bottom, BidResult::Called { trump: Suit::Hearts, caller: Position::Top } => Position::Left)]
+    fn next_position_playing(player: Position, bid_result: BidResult) -> Position {
+        player.next_position_playing(&bid_result)
     }
 }
