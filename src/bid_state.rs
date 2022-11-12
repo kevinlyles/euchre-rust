@@ -23,15 +23,15 @@ pub enum BidPhase {
     },
     OrderedUp {
         caller: Position,
-        trump: Suit,
+        card_ordered: CardLogic,
     },
     OrderedUpAlone {
         caller: Position,
-        trump: Suit,
+        card_ordered: CardLogic,
     },
     OrderedUpDefendedAlone {
         caller: Position,
-        trump: Suit,
+        card_ordered: CardLogic,
         defender: Position,
     },
     SecondRoundFirstPlayer {
@@ -59,17 +59,89 @@ impl BidState {
         }
     }
 
-    pub fn step(&mut self, players: &mut [Box<dyn Player>; 4]) -> Option<BidResult> {
+    pub fn step(
+        &mut self,
+        players: &mut [Box<dyn Player>; 4],
+        hands: &mut [HandLogic; 4],
+    ) -> Option<BidResult> {
         match &mut self.phase {
-            BidPhase::FirstRoundFirstPlayer { trump_candidate } => todo!(),
-            BidPhase::FirstRoundSecondPlayer { trump_candidate } => todo!(),
-            BidPhase::FirstRoundThirdPlayer { trump_candidate } => todo!(),
-            BidPhase::FirstRoundFourthPlayer { trump_candidate } => todo!(),
-            BidPhase::OrderedUp { caller, trump } => todo!(),
-            BidPhase::OrderedUpAlone { caller, trump } => todo!(),
+            BidPhase::FirstRoundFirstPlayer {
+                ref trump_candidate,
+            } => {
+                let bidder = self.dealer.next_position_bidding();
+                self.phase = match BidState::order_up(
+                    &self.dealer,
+                    bidder,
+                    *trump_candidate,
+                    players,
+                    hands,
+                ) {
+                    Some(phase) => phase,
+                    None => BidPhase::FirstRoundSecondPlayer {
+                        trump_candidate: trump_candidate.clone(),
+                    },
+                };
+                None
+            }
+            BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
+                let bidder = self.dealer.partner();
+                self.phase = match BidState::order_up(
+                    &self.dealer,
+                    bidder,
+                    *trump_candidate,
+                    players,
+                    hands,
+                ) {
+                    Some(phase) => phase,
+                    None => BidPhase::FirstRoundThirdPlayer {
+                        trump_candidate: trump_candidate.clone(),
+                    },
+                };
+                None
+            }
+            BidPhase::FirstRoundThirdPlayer { trump_candidate } => {
+                let bidder = self.dealer.partner().next_position_bidding();
+                self.phase = match BidState::order_up(
+                    &self.dealer,
+                    bidder,
+                    *trump_candidate,
+                    players,
+                    hands,
+                ) {
+                    Some(phase) => phase,
+                    None => BidPhase::FirstRoundFourthPlayer {
+                        trump_candidate: trump_candidate.clone(),
+                    },
+                };
+                None
+            }
+            BidPhase::FirstRoundFourthPlayer { trump_candidate } => {
+                let bidder = self.dealer.partner().next_position_bidding();
+                self.phase = match BidState::order_up(
+                    &self.dealer,
+                    bidder,
+                    *trump_candidate,
+                    players,
+                    hands,
+                ) {
+                    Some(phase) => phase,
+                    None => BidPhase::SecondRoundFirstPlayer {
+                        forbidden_suit: trump_candidate.suit,
+                    },
+                };
+                None
+            }
+            BidPhase::OrderedUp {
+                caller,
+                card_ordered,
+            } => todo!(),
+            BidPhase::OrderedUpAlone {
+                caller,
+                card_ordered,
+            } => todo!(),
             BidPhase::OrderedUpDefendedAlone {
                 caller,
-                trump,
+                card_ordered,
                 defender,
             } => todo!(),
             BidPhase::SecondRoundFirstPlayer { forbidden_suit } => todo!(),
@@ -77,6 +149,61 @@ impl BidState {
             BidPhase::SecondRoundThirdPlayer { forbidden_suit } => todo!(),
             BidPhase::SecondRoundFourthPlayer { forbidden_suit } => todo!(),
             BidPhase::Done { bid_result } => Some(bid_result.clone()),
+        }
+    }
+
+    fn order_up(
+        dealer: &Position,
+        bidder: Position,
+        trump_candidate: CardLogic,
+        players: &mut [Box<dyn Player>; 4],
+        hands: &[HandLogic; 4],
+    ) -> Option<BidPhase> {
+        let bidder_index = bidder.index();
+        if !players[bidder_index].should_order_up(&hands[bidder_index], dealer, &trump_candidate) {
+            return None;
+        }
+        if !players[bidder_index].should_go_alone(
+            &hands[bidder_index],
+            dealer,
+            Some(&trump_candidate),
+        ) {
+            return Some(BidPhase::OrderedUp {
+                caller: bidder,
+                card_ordered: trump_candidate,
+            });
+        }
+        let defender = bidder.next_position_bidding();
+        let defender_index = defender.index();
+        if players[defender_index].should_defend_alone(
+            &hands[defender_index],
+            dealer,
+            Some(&trump_candidate),
+        ) {
+            Some(BidPhase::OrderedUpDefendedAlone {
+                caller: bidder,
+                card_ordered: trump_candidate,
+                defender,
+            })
+        } else {
+            let defender = defender.partner();
+            let defender_index = defender.index();
+            if players[defender_index].should_defend_alone(
+                &hands[defender_index],
+                dealer,
+                Some(&trump_candidate),
+            ) {
+                Some(BidPhase::OrderedUpDefendedAlone {
+                    caller: bidder,
+                    card_ordered: trump_candidate,
+                    defender,
+                })
+            } else {
+                Some(BidPhase::OrderedUpAlone {
+                    caller: bidder,
+                    card_ordered: trump_candidate,
+                })
+            }
         }
     }
 

@@ -58,7 +58,7 @@ impl HandState {
     ) -> Option<[u8; 4]> {
         match &mut self.phase {
             HandPhase::Bidding { bid_state } => {
-                match bid_state.step(players) {
+                match bid_state.step(players, hands) {
                     Some(bid_result) => {
                         self.phase = HandPhase::FirstTrick {
                             trick_state: TrickState::create(
