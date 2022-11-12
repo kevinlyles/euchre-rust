@@ -10,31 +10,49 @@ pub trait Player {
         false
     }
 
-    fn call_trump(
+    fn should_order_up_alone(
         &mut self,
         hand: &HandLogic,
         dealer: &Position,
-        turned_down: CardLogic,
-    ) -> Option<Suit> {
-        None
-    }
-
-    fn should_go_alone(
-        &mut self,
-        hand: &HandLogic,
-        dealer: &Position,
-        //TODO: also indicate trump when there is no candidate
-        trump_candidate: Option<&CardLogic>,
+        trump_candidate: &CardLogic,
     ) -> bool {
         false
     }
 
-    fn should_defend_alone(
+    fn should_defend_alone_ordered(
         &mut self,
         hand: &HandLogic,
         dealer: &Position,
-        //TODO: also indicate trump when there is no candidate
-        trump_candidate: Option<&CardLogic>,
+        trump_candidate: &CardLogic,
+    ) -> bool {
+        false
+    }
+
+    fn call_trump(
+        &mut self,
+        hand: &HandLogic,
+        dealer: &Position,
+        turned_down: &CardLogic,
+    ) -> Option<Suit> {
+        None
+    }
+
+    fn should_call_alone(
+        &mut self,
+        hand: &HandLogic,
+        dealer: &Position,
+        trump: &Suit,
+        turned_down: &CardLogic,
+    ) -> bool {
+        false
+    }
+
+    fn should_defend_alone_called(
+        &mut self,
+        hand: &HandLogic,
+        dealer: &Position,
+        trump: &Suit,
+        turned_down: &CardLogic,
     ) -> bool {
         false
     }
