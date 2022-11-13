@@ -1,5 +1,5 @@
 use crate::{
-    bid_result::BidResult, card::CardLogic, hand::HandLogic, player::Player, position::Position,
+    bid_result::BidResultAll, card::CardLogic, hand::HandLogic, player::Player, position::Position,
 };
 
 pub struct BidState {
@@ -46,7 +46,7 @@ pub enum BidPhase {
         turned_down: CardLogic,
     },
     Done {
-        bid_result: BidResult,
+        bid_result: BidResultAll,
     },
 }
 
@@ -62,7 +62,7 @@ impl BidState {
         &mut self,
         players: &mut [Box<dyn Player>; 4],
         hands: &mut [HandLogic; 4],
-    ) -> Option<BidResult> {
+    ) -> Option<BidResultAll> {
         match &mut self.phase {
             BidPhase::FirstRoundFirstPlayer {
                 ref trump_candidate,
@@ -120,10 +120,11 @@ impl BidState {
             } => {
                 let hand = &mut hands[self.dealer.index()];
                 hand.cards.push(*card_ordered);
-                let discard = players[self.dealer.index()].choose_discard(&hand);
+                let discard =
+                    players[self.dealer.index()].choose_discard(&hand, &card_ordered.suit);
                 hand.cards.retain(|card| *card != discard);
                 self.phase = BidPhase::Done {
-                    bid_result: BidResult::Called {
+                    bid_result: BidResultAll::Called {
                         trump: card_ordered.suit,
                         caller: *caller,
                     },
@@ -136,10 +137,11 @@ impl BidState {
             } => {
                 let hand = &mut hands[self.dealer.index()];
                 hand.cards.push(*card_ordered);
-                let discard = players[self.dealer.index()].choose_discard(&hand);
+                let discard =
+                    players[self.dealer.index()].choose_discard(&hand, &card_ordered.suit);
                 hand.cards.retain(|card| *card != discard);
                 self.phase = BidPhase::Done {
-                    bid_result: BidResult::CalledAlone {
+                    bid_result: BidResultAll::CalledAlone {
                         trump: card_ordered.suit,
                         caller: *caller,
                     },
@@ -153,10 +155,11 @@ impl BidState {
             } => {
                 let hand = &mut hands[self.dealer.index()];
                 hand.cards.push(*card_ordered);
-                let discard = players[self.dealer.index()].choose_discard(&hand);
+                let discard =
+                    players[self.dealer.index()].choose_discard(&hand, &card_ordered.suit);
                 hand.cards.retain(|card| *card != discard);
                 self.phase = BidPhase::Done {
-                    bid_result: BidResult::DefendedAlone {
+                    bid_result: BidResultAll::DefendedAlone {
                         trump: card_ordered.suit,
                         caller: *caller,
                         defender: *defender,
@@ -203,7 +206,7 @@ impl BidState {
                 {
                     Some(bid_result) => BidPhase::Done { bid_result },
                     _ => BidPhase::Done {
-                        bid_result: BidResult::NoOneCalled,
+                        bid_result: BidResultAll::NoOneCalled,
                     },
                 };
                 None
@@ -273,7 +276,7 @@ impl BidState {
         players: &mut [Box<dyn Player>; 4],
         hands: &[HandLogic; 4],
         turned_down: &CardLogic,
-    ) -> Option<BidResult> {
+    ) -> Option<BidResultAll> {
         match players[bidder.index()].call_trump(&hands[bidder.index()], &dealer, turned_down) {
             Some(trump) if trump != turned_down.suit => {
                 if players[bidder.index()].should_call_alone(
@@ -289,7 +292,7 @@ impl BidState {
                         &trump,
                         &turned_down,
                     ) {
-                        Some(BidResult::DefendedAlone {
+                        Some(BidResultAll::DefendedAlone {
                             trump,
                             caller: bidder,
                             defender,
@@ -302,20 +305,20 @@ impl BidState {
                             &trump,
                             &turned_down,
                         ) {
-                            Some(BidResult::DefendedAlone {
+                            Some(BidResultAll::DefendedAlone {
                                 trump,
                                 caller: bidder,
                                 defender,
                             })
                         } else {
-                            Some(BidResult::CalledAlone {
+                            Some(BidResultAll::CalledAlone {
                                 trump,
                                 caller: bidder,
                             })
                         }
                     }
                 } else {
-                    Some(BidResult::Called {
+                    Some(BidResultAll::Called {
                         trump,
                         caller: bidder,
                     })

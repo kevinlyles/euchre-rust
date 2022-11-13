@@ -1,16 +1,16 @@
 use crate::{rank::Rank, suit::Suit};
 use enum_iterator::IntoEnumIterator;
 
-#[derive(Copy, Clone, IntoEnumIterator, PartialEq, Debug)]
+#[derive(Copy, Clone, IntoEnumIterator, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RankWithBowers {
-    RightBower,
-    LeftBower,
-    Ace,
-    King,
-    Queen,
-    Jack,
-    Ten,
-    Nine,
+    RightBower = 16,
+    LeftBower = 15,
+    Ace = 14,
+    King = 13,
+    Queen = 12,
+    Jack = 11,
+    Ten = 10,
+    Nine = 9,
 }
 
 impl RankWithBowers {

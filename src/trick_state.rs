@@ -1,35 +1,28 @@
-use crate::{card::CardLogic, hand::HandLogic, player::Player, position::Position, suit::Suit};
+use crate::{
+    bid_result::BidResultCalled, card::CardLogic, hand::HandLogic, player::Player,
+    position::Position, suit::Suit,
+};
 
 pub struct TrickState {
-    leader: Position,
+    pub bid_result: BidResultCalled,
+    pub leader: Position,
     pub phase: TrickPhase,
 }
 
 pub enum TrickPhase {
-    Start,
-    FirstCardPlayed {
-        suit_lead: Suit,
-        cards_played: [CardLogic; 1],
-    },
-    SecondCardPlayed {
-        suit_lead: Suit,
-        cards_played: [CardLogic; 2],
-    },
-    ThirdCardPlayed {
-        suit_lead: Suit,
-        cards_played: [CardLogic; 3],
-    },
-    FourthCardPlayed {
-        suit_lead: Suit,
-        cards_played: [CardLogic; 4],
-    },
+    BeforeFirstTrick,
+    BeforeSecondTrick { cards_played: [CardLogic; 1] },
+    BeforeThirdTrick { cards_played: [CardLogic; 2] },
+    BeforeFourthTrick { cards_played: [CardLogic; 3] },
+    Done { trick_winner: Position },
 }
 
 impl TrickState {
-    pub fn create(leader: Position) -> TrickState {
+    pub fn create(bid_result: BidResultCalled, leader: Position) -> TrickState {
         TrickState {
+            bid_result,
             leader,
-            phase: TrickPhase::Start,
+            phase: TrickPhase::BeforeFirstTrick,
         }
     }
 
@@ -38,6 +31,138 @@ impl TrickState {
         players: &mut [Box<dyn Player>; 4],
         hands: &mut [HandLogic; 4],
     ) -> Option<Position> {
-        todo!()
+        match self.phase {
+            TrickPhase::BeforeFirstTrick => {
+                let player = self.leader;
+                let hand = &mut hands[player.index()];
+                let mut card =
+                    players[player.index()].play_card(&hand, &self.bid_result.trump(), None);
+                if !hand.cards.contains(&card) {
+                    card = hand.cards[0];
+                }
+                hand.cards.retain(|c| c != &card);
+                self.phase = TrickPhase::BeforeSecondTrick {
+                    cards_played: [card],
+                };
+                None
+            }
+            TrickPhase::BeforeSecondTrick { cards_played } => {
+                let player = &self.leader.next_position_playing(&self.bid_result);
+                let trump = &self.bid_result.trump();
+                let suit_led = &cards_played[0].suit;
+                let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                self.phase = TrickPhase::BeforeThirdTrick {
+                    cards_played: [cards_played[0], card],
+                };
+                None
+            }
+            TrickPhase::BeforeThirdTrick { cards_played } => {
+                let player = &self
+                    .leader
+                    .next_position_playing(&self.bid_result)
+                    .next_position_playing(&self.bid_result);
+                if *player == self.leader {
+                    self.phase = TrickPhase::Done {
+                        trick_winner: TrickState::get_winning_position(
+                            &self.bid_result,
+                            &self.leader,
+                            &mut cards_played.iter(),
+                        ),
+                    }
+                } else {
+                    let trump = &self.bid_result.trump();
+                    let suit_led = &cards_played[0].suit;
+                    let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                    self.phase = TrickPhase::BeforeFourthTrick {
+                        cards_played: [cards_played[0], cards_played[1], card],
+                    }
+                }
+                None
+            }
+            TrickPhase::BeforeFourthTrick { cards_played } => {
+                let player = &self
+                    .leader
+                    .next_position_playing(&self.bid_result)
+                    .next_position_playing(&self.bid_result)
+                    .next_position_playing(&self.bid_result);
+                if *player == self.leader {
+                    self.phase = TrickPhase::Done {
+                        trick_winner: TrickState::get_winning_position(
+                            &self.bid_result,
+                            &self.leader,
+                            &mut cards_played.iter(),
+                        ),
+                    }
+                } else {
+                    let trump = &self.bid_result.trump();
+                    let suit_led = &cards_played[0].suit;
+                    let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                    self.phase = TrickPhase::Done {
+                        trick_winner: TrickState::get_winning_position(
+                            &self.bid_result,
+                            &self.leader,
+                            &mut cards_played.iter().chain(std::iter::once(&card)),
+                        ),
+                    }
+                }
+                None
+            }
+            TrickPhase::Done { trick_winner } => Some(trick_winner),
+        }
+    }
+
+    fn play_card(
+        player: &Position,
+        players: &mut [Box<dyn Player>; 4],
+        hands: &mut [HandLogic; 4],
+        trump: &Suit,
+        suit_led: &Suit,
+    ) -> CardLogic {
+        let hand = &mut hands[player.index()];
+        let mut card = players[player.index()].play_card(&hand, &trump, None);
+        if !hand.cards.contains(&card) {
+            card = hand.cards[0]
+        }
+        if card.suit != *suit_led {
+            match hand.cards.iter().filter(|card| card.suit == *trump).next() {
+                Some(card_following_suit) => card = *card_following_suit,
+                None => (),
+            }
+        }
+        hand.cards.retain(|c| c != &card);
+        card
+    }
+
+    fn get_winning_position<'a, T: Iterator<Item = &'a CardLogic> + Clone>(
+        bid_result: &BidResultCalled,
+        leader: &Position,
+        cards_played: &'a mut T,
+    ) -> Position {
+        //TODO: see if we can combine these steps?
+        let winning_card = cards_played
+            .clone()
+            .reduce(|first_card, second_card| {
+                if first_card.suit == second_card.suit {
+                    if first_card.rank > second_card.rank {
+                        first_card
+                    } else {
+                        second_card
+                    }
+                } else if second_card.suit == bid_result.trump() {
+                    second_card
+                } else {
+                    first_card
+                }
+            })
+            .unwrap();
+        let mut player = *leader;
+        loop {
+            match cards_played.next() {
+                Some(card) if card == winning_card => break,
+                None => panic!(),
+                _ => player = player.next_position_playing(bid_result),
+            }
+        }
+        player
     }
 }

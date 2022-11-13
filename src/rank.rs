@@ -2,12 +2,12 @@ use core::fmt;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Rank {
-    Ace,
-    King,
-    Queen,
-    Jack,
-    Ten,
-    Nine,
+    Ace = 14,
+    King = 13,
+    Queen = 12,
+    Jack = 11,
+    Ten = 10,
+    Nine = 9,
 }
 
 impl Rank {

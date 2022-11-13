@@ -57,11 +57,11 @@ pub trait Player {
         false
     }
 
-    fn choose_discard(&mut self, hand: &HandLogic) -> CardLogic {
+    fn choose_discard(&mut self, hand: &HandLogic, trump: &Suit) -> CardLogic {
         hand.cards[0]
     }
 
-    fn play_card(&mut self, hand: &HandLogic, led: Option<Suit>) -> CardLogic {
+    fn play_card(&mut self, hand: &HandLogic, trump: &Suit, led: Option<Suit>) -> CardLogic {
         match led {
             Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
                 Some(card) => *card,

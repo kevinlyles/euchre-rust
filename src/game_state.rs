@@ -39,7 +39,7 @@ impl GameState {
                 ref mut hands,
             } => {
                 match hand_state.step(&mut self.players, hands) {
-                    Some(tricks_taken) => self.update_score(tricks_taken),
+                    Some((player, score)) => self.update_score(player, score),
                     None => (),
                 }
                 None
@@ -58,7 +58,7 @@ impl GameState {
         }
     }
 
-    fn update_score(&mut self, tricks_taken: [u8; 4]) -> () {
+    fn update_score(&mut self, player: Position, score: u8) -> () {
         todo!("update scores")
     }
 }
