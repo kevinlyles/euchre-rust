@@ -66,7 +66,7 @@ impl TrickState {
                         trick_winner: TrickState::get_winning_position(
                             &self.bid_result,
                             &self.leader,
-                            &mut cards_played.iter(),
+                            cards_played.as_slice(),
                         ),
                     }
                 } else {
@@ -90,18 +90,20 @@ impl TrickState {
                         trick_winner: TrickState::get_winning_position(
                             &self.bid_result,
                             &self.leader,
-                            &mut cards_played.iter(),
+                            cards_played.as_slice(),
                         ),
                     }
                 } else {
                     let trump = &self.bid_result.trump();
                     let suit_led = &cards_played[0].suit;
                     let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                    let new_cards_played =
+                        [cards_played[0], cards_played[1], cards_played[2], card];
                     self.phase = TrickPhase::Done {
                         trick_winner: TrickState::get_winning_position(
                             &self.bid_result,
                             &self.leader,
-                            &mut cards_played.iter().chain(std::iter::once(&card)),
+                            new_cards_played.as_slice(),
                         ),
                     }
                 }
@@ -133,14 +135,14 @@ impl TrickState {
         card
     }
 
-    fn get_winning_position<'a, T: Iterator<Item = &'a CardLogic> + Clone>(
+    fn get_winning_position(
         bid_result: &BidResultCalled,
         leader: &Position,
-        cards_played: &'a mut T,
+        cards_played: &[CardLogic],
     ) -> Position {
         //TODO: see if we can combine these steps?
         let winning_card = cards_played
-            .clone()
+            .iter()
             .reduce(|first_card, second_card| {
                 if first_card.suit == second_card.suit {
                     if first_card.rank > second_card.rank {
@@ -156,8 +158,9 @@ impl TrickState {
             })
             .unwrap();
         let mut player = *leader;
+        let mut iterator = cards_played.iter();
         loop {
-            match cards_played.next() {
+            match iterator.next() {
                 Some(card) if card == winning_card => break,
                 None => panic!(),
                 _ => player = player.next_position_playing(bid_result),

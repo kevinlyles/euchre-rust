@@ -67,9 +67,9 @@ impl HandState {
                 match bid_state.step(players, hands) {
                     Some(bid_result) => {
                         self.phase = match bid_result {
-                            BidResultAll::Called { trump, .. }
-                            | BidResultAll::CalledAlone { trump, .. }
-                            | BidResultAll::DefendedAlone { trump, .. } => {
+                            BidResultAll::Called { .. }
+                            | BidResultAll::CalledAlone { .. }
+                            | BidResultAll::DefendedAlone { .. } => {
                                 let bid_result: BidResultCalled = bid_result.try_into().unwrap();
                                 HandPhase::FirstTrick {
                                     trick_state: TrickState::create(
@@ -186,6 +186,47 @@ impl HandState {
     }
 
     fn get_score(bid_result: &BidResultAll, tricks_taken: &[u8; 4]) -> (Position, u8) {
-        todo!()
+        match bid_result {
+            BidResultAll::Called { caller, .. } => {
+                let caller_tricks =
+                    tricks_taken[caller.index()] + tricks_taken[caller.partner().index()];
+                if caller_tricks >= 3 {
+                    if caller_tricks >= 5 {
+                        (*caller, 2)
+                    } else {
+                        (*caller, 1)
+                    }
+                } else {
+                    (caller.next_position_bidding(), 2)
+                }
+            }
+            BidResultAll::CalledAlone { caller, .. } => {
+                let caller_tricks = tricks_taken[caller.index()];
+                if caller_tricks >= 3 {
+                    if caller_tricks >= 5 {
+                        (*caller, 4)
+                    } else {
+                        (*caller, 1)
+                    }
+                } else {
+                    (caller.next_position_bidding(), 2)
+                }
+            }
+            BidResultAll::DefendedAlone {
+                caller, defender, ..
+            } => {
+                let caller_tricks = tricks_taken[caller.index()];
+                if caller_tricks >= 3 {
+                    if caller_tricks >= 5 {
+                        (*caller, 4)
+                    } else {
+                        (*caller, 1)
+                    }
+                } else {
+                    (*defender, 4)
+                }
+            }
+            BidResultAll::NoOneCalled => (Position::Bottom, 0),
+        }
     }
 }

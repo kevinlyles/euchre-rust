@@ -59,6 +59,19 @@ impl GameState {
     }
 
     fn update_score(&mut self, player: Position, score: u8) -> () {
-        todo!("update scores")
+        match player {
+            Position::Bottom | Position::Top => {
+                self.north_south_score += score;
+                if self.north_south_score >= 10 {
+                    self.phase = GamePhase::Done
+                }
+            }
+            Position::Left | Position::Right => {
+                self.east_west_score += score;
+                if self.east_west_score >= 10 {
+                    self.phase = GamePhase::Done
+                }
+            }
+        }
     }
 }
