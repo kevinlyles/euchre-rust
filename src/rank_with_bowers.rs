@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{rank::Rank, suit::Suit};
 use enum_iterator::IntoEnumIterator;
 
@@ -11,6 +13,22 @@ pub enum RankWithBowers {
     Jack = 11,
     Ten = 10,
     Nine = 9,
+}
+
+impl Display for RankWithBowers {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let rank = match self {
+            Self::RightBower => "R",
+            Self::LeftBower => "L",
+            Self::Ace => "A",
+            Self::King => "K",
+            Self::Queen => "Q",
+            Self::Jack => "J",
+            Self::Ten => "10",
+            Self::Nine => "9",
+        };
+        write!(f, "{}", rank)
+    }
 }
 
 impl RankWithBowers {

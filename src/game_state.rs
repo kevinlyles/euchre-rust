@@ -1,6 +1,4 @@
-use crate::{
-    deck::Deck, hand::HandLogic, hand_state::HandState, player::Player, position::Position,
-};
+use crate::{deck::Deck, hand_state::HandState, player::Player, position::Position};
 
 pub struct GameState {
     pub players: [Box<dyn Player>; 4],
@@ -10,11 +8,7 @@ pub struct GameState {
 }
 
 pub enum GamePhase {
-    Playing {
-        hand_state: HandState,
-        //TODO: decide where this should actually live
-        hands: [HandLogic; 4],
-    },
+    Playing { hand_state: HandState },
     Done,
 }
 
@@ -24,8 +18,7 @@ impl GameState {
         GameState {
             players,
             phase: GamePhase::Playing {
-                hand_state: HandState::create(Position::Bottom, trump_candidate),
-                hands,
+                hand_state: HandState::create(Position::South, trump_candidate, hands),
             },
             north_south_score: 0,
             east_west_score: 0,
@@ -34,12 +27,9 @@ impl GameState {
 
     pub fn step(&mut self) -> Option<String> {
         match &mut self.phase {
-            GamePhase::Playing {
-                ref mut hand_state,
-                ref mut hands,
-            } => {
-                match hand_state.step(&mut self.players, hands) {
-                    Some((player, score)) => self.update_score(player, score),
+            GamePhase::Playing { ref mut hand_state } => {
+                match hand_state.step(&mut self.players) {
+                    Some((player, score)) => self.finish_hand(player, score),
                     None => (),
                 }
                 None
@@ -58,20 +48,47 @@ impl GameState {
         }
     }
 
-    fn update_score(&mut self, player: Position, score: u8) -> () {
-        match player {
-            Position::Bottom | Position::Top => {
-                self.north_south_score += score;
-                if self.north_south_score >= 10 {
-                    self.phase = GamePhase::Done
+    fn finish_hand(&mut self, player: Position, score: u8) -> () {
+        if score > 0 {
+            match player {
+                Position::South | Position::North => {
+                    self.north_south_score += score;
+                    log::info!(
+                        "North/South scored {} points: {}-{}",
+                        score,
+                        self.north_south_score,
+                        self.east_west_score
+                    );
+                    if self.north_south_score >= 10 {
+                        self.phase = GamePhase::Done;
+                    }
+                }
+                Position::West | Position::East => {
+                    self.east_west_score += score;
+                    log::info!(
+                        "East/West scored {} points: {}-{}",
+                        score,
+                        self.east_west_score,
+                        self.north_south_score
+                    );
+                    if self.east_west_score >= 10 {
+                        self.phase = GamePhase::Done;
+                    }
                 }
             }
-            Position::Left | Position::Right => {
-                self.east_west_score += score;
-                if self.east_west_score >= 10 {
-                    self.phase = GamePhase::Done
+        }
+        match &self.phase {
+            GamePhase::Playing { hand_state, .. } => {
+                let (hands, trump_candidate) = Deck::create_shuffled_deck().deal();
+                self.phase = GamePhase::Playing {
+                    hand_state: HandState::create(
+                        hand_state.dealer.next_position_bidding(),
+                        trump_candidate,
+                        hands,
+                    ),
                 }
             }
+            GamePhase::Done => (),
         }
     }
 }

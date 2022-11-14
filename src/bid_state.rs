@@ -205,9 +205,12 @@ impl BidState {
                 self.phase = match BidState::call(&self.dealer, bidder, players, hands, turned_down)
                 {
                     Some(bid_result) => BidPhase::Done { bid_result },
-                    _ => BidPhase::Done {
-                        bid_result: BidResultAll::NoOneCalled,
-                    },
+                    _ => {
+                        log::info!("{}", "No one called a trump suit");
+                        BidPhase::Done {
+                            bid_result: BidResultAll::NoOneCalled,
+                        }
+                    }
                 };
                 None
             }
@@ -226,6 +229,7 @@ impl BidState {
         if !players[bidder_index].should_order_up(&hands[bidder_index], dealer, trump_candidate) {
             return None;
         }
+        log::info!("{:?} ordered up {}", bidder, trump_candidate);
         if !players[bidder_index].should_order_up_alone(
             &hands[bidder_index],
             dealer,
@@ -279,13 +283,32 @@ impl BidState {
     ) -> Option<BidResultAll> {
         match players[bidder.index()].call_trump(&hands[bidder.index()], &dealer, turned_down) {
             Some(trump) if trump != turned_down.suit => {
-                if players[bidder.index()].should_call_alone(
+                log::info!("{:?} called {}", bidder, trump);
+                if !players[bidder.index()].should_call_alone(
                     &hands[bidder.index()],
                     &dealer,
                     &trump,
                     &turned_down,
                 ) {
-                    let defender = bidder.next_position_bidding();
+                    return Some(BidResultAll::Called {
+                        trump,
+                        caller: bidder,
+                    });
+                }
+                let defender = bidder.next_position_bidding();
+                if players[defender.index()].should_defend_alone_called(
+                    &hands[defender.index()],
+                    &dealer,
+                    &trump,
+                    &turned_down,
+                ) {
+                    Some(BidResultAll::DefendedAlone {
+                        trump,
+                        caller: bidder,
+                        defender,
+                    })
+                } else {
+                    let defender = defender.partner();
                     if players[defender.index()].should_defend_alone_called(
                         &hands[defender.index()],
                         &dealer,
@@ -298,30 +321,11 @@ impl BidState {
                             defender,
                         })
                     } else {
-                        let defender = defender.partner();
-                        if players[defender.index()].should_defend_alone_called(
-                            &hands[defender.index()],
-                            &dealer,
-                            &trump,
-                            &turned_down,
-                        ) {
-                            Some(BidResultAll::DefendedAlone {
-                                trump,
-                                caller: bidder,
-                                defender,
-                            })
-                        } else {
-                            Some(BidResultAll::CalledAlone {
-                                trump,
-                                caller: bidder,
-                            })
-                        }
+                        Some(BidResultAll::CalledAlone {
+                            trump,
+                            caller: bidder,
+                        })
                     }
-                } else {
-                    Some(BidResultAll::Called {
-                        trump,
-                        caller: bidder,
-                    })
                 }
             }
             _ => None,

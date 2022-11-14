@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 rand = "~0.8.5"
 enum-iterator = "~0.8"
+log = "0.4.17"
 
 [dev-dependencies]
 test-case = "2.2.2"
