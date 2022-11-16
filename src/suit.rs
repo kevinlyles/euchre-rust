@@ -27,13 +27,6 @@ impl Suit {
             Self::Clubs => 0x1F0D0,
         }
     }
-
-    pub fn color(&self) -> String {
-        match self {
-            Self::Spades | Self::Clubs => String::from("black"),
-            Self::Hearts | Self::Diamonds => String::from("red"),
-        }
-    }
 }
 
 impl fmt::Display for Suit {
