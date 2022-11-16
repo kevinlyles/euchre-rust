@@ -7,6 +7,7 @@ pub struct BidState {
     pub phase: BidPhase,
 }
 
+#[derive(Debug)]
 pub enum BidPhase {
     FirstRoundFirstPlayer {
         trump_candidate: CardLogic,
@@ -331,5 +332,187 @@ impl BidState {
             _ => None,
         };
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{rank_with_bowers::RankWithBowers, suit::Suit};
+
+    struct AlwaysPasses {}
+    impl Player for AlwaysPasses {}
+
+    #[test]
+    fn everyone_passes() {
+        let dealer = Position::North;
+        let original_trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let mut players: [Box<dyn Player>; 4] = [
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysPasses {}),
+        ];
+        let mut hands = [
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+        ];
+        let mut bid_state = BidState::create(dealer, original_trump_candidate);
+        assert_eq!(bid_state.dealer, dealer);
+        match bid_state.phase {
+            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
+                assert_eq!(trump_candidate, original_trump_candidate)
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
+                        assert_eq!(trump_candidate, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::FirstRoundThirdPlayer { trump_candidate } => {
+                        assert_eq!(trump_candidate, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::FirstRoundFourthPlayer { trump_candidate } => {
+                        assert_eq!(trump_candidate, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::SecondRoundFirstPlayer { turned_down } => {
+                        assert_eq!(turned_down, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::SecondRoundSecondPlayer { turned_down } => {
+                        assert_eq!(turned_down, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::SecondRoundThirdPlayer { turned_down } => {
+                        assert_eq!(turned_down, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::SecondRoundFourthPlayer { turned_down } => {
+                        assert_eq!(turned_down, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::Done { ref bid_result } => match bid_result {
+                        BidResultAll::NoOneCalled => (),
+                        _ => assert!(false),
+                    },
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            Some(bid_result) => match bid_result {
+                BidResultAll::NoOneCalled => (),
+                _ => assert!(false),
+            },
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    fn ordered_up() {
+        todo!()
+    }
+
+    #[test]
+    fn ordered_up_alone() {
+        todo!()
+    }
+
+    #[test]
+    fn ordered_up_defended_alone_first_opponent() {
+        todo!()
+    }
+
+    #[test]
+    fn ordered_up_defended_alone_second_opponent() {
+        todo!()
+    }
+
+    #[test]
+    fn called() {
+        todo!()
+    }
+
+    #[test]
+    fn called_alone() {
+        todo!()
+    }
+
+    #[test]
+    fn called_defended_alone_first_opponent() {
+        todo!()
+    }
+
+    #[test]
+    fn called_defended_alone_second_opponent() {
+        todo!()
     }
 }

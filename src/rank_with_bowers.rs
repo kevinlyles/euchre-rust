@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{rank::Rank, suit::Suit};
 use enum_iterator::IntoEnumIterator;
 
-#[derive(Copy, Clone, IntoEnumIterator, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, IntoEnumIterator, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RankWithBowers {
     RightBower = 16,
     LeftBower = 15,

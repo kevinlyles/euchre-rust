@@ -1,7 +1,7 @@
 use crate::{rank_with_bowers::RankWithBowers, suit::Suit};
 use core::fmt;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CardLogic {
     pub suit: Suit,
     pub rank: RankWithBowers,

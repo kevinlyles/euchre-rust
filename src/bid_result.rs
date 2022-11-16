@@ -1,6 +1,6 @@
 use crate::{position::Position, suit::Suit};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BidResultAll {
     Called {
         trump: Suit,
@@ -38,7 +38,7 @@ impl From<BidResultCalled> for BidResultAll {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BidResultCalled {
     Called {
         trump: Suit,
