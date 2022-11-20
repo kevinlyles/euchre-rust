@@ -1,7 +1,7 @@
 use crate::{deck::Deck, hand_state::HandState, player::Player, position::Position};
 
-pub struct GameState {
-    pub players: [Box<dyn Player>; 4],
+pub struct GameState<T: Player> {
+    pub players: [T; 4],
     pub phase: GamePhase,
     pub north_south_score: u8,
     pub east_west_score: u8,
@@ -12,8 +12,8 @@ pub enum GamePhase {
     Done,
 }
 
-impl GameState {
-    pub fn create(players: [Box<dyn Player>; 4]) -> GameState {
+impl<T: Player> GameState<T> {
+    pub fn create(players: [T; 4]) -> GameState<T> {
         let (hands, trump_candidate) = Deck::create_shuffled_deck().deal();
         GameState {
             players,

@@ -65,7 +65,7 @@ impl HandState {
         }
     }
 
-    pub fn step(&mut self, players: &mut [Box<dyn Player>; 4]) -> Option<(Position, u8)> {
+    pub fn step(&mut self, players: &mut [impl Player; 4]) -> Option<(Position, u8)> {
         match &mut self.phase {
             HandPhase::Bidding { bid_state } => {
                 match bid_state.step(players, &mut self.hands) {

@@ -28,7 +28,7 @@ impl TrickState {
 
     pub fn step(
         &mut self,
-        players: &mut [Box<dyn Player>; 4],
+        players: &mut [impl Player; 4],
         hands: &mut [HandLogic; 4],
     ) -> Option<Position> {
         match self.phase {
@@ -115,7 +115,7 @@ impl TrickState {
 
     fn play_card(
         player: &Position,
-        players: &mut [Box<dyn Player>; 4],
+        players: &mut [impl Player; 4],
         hands: &mut [HandLogic; 4],
         trump: &Suit,
         suit_led: &Suit,
