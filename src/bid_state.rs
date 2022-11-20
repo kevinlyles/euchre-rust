@@ -344,10 +344,9 @@ mod tests {
     struct TestBidder {
         order_up: bool,
         order_up_alone: bool,
-        defend_alone_ordered: bool,
+        defend_alone: bool,
         trump_to_call: Option<Suit>,
         call_alone: bool,
-        defend_alone_called: bool,
     }
 
     impl TestBidder {
@@ -355,10 +354,9 @@ mod tests {
             TestBidder {
                 order_up: false,
                 order_up_alone: false,
-                defend_alone_ordered: false,
+                defend_alone: false,
                 trump_to_call: None,
                 call_alone: false,
-                defend_alone_called: false,
             }
         }
 
@@ -366,10 +364,9 @@ mod tests {
             TestBidder {
                 order_up: true,
                 order_up_alone: false,
-                defend_alone_ordered: false,
+                defend_alone: false,
                 trump_to_call: None,
                 call_alone: false,
-                defend_alone_called: false,
             }
         }
 
@@ -377,10 +374,19 @@ mod tests {
             TestBidder {
                 order_up: true,
                 order_up_alone: true,
-                defend_alone_ordered: false,
+                defend_alone: false,
                 trump_to_call: None,
                 call_alone: false,
-                defend_alone_called: false,
+            }
+        }
+
+        pub fn defends_alone() -> TestBidder {
+            TestBidder {
+                order_up: false,
+                order_up_alone: false,
+                defend_alone: true,
+                trump_to_call: None,
+                call_alone: false,
             }
         }
     }
@@ -410,7 +416,7 @@ mod tests {
             _dealer: &Position,
             _trump_candidate: &CardLogic,
         ) -> bool {
-            self.defend_alone_ordered
+            self.defend_alone
         }
 
         fn call_trump(
@@ -439,7 +445,7 @@ mod tests {
             _trump: &Suit,
             _turned_down: &CardLogic,
         ) -> bool {
-            self.defend_alone_called
+            self.defend_alone
         }
     }
 
@@ -451,18 +457,10 @@ mod tests {
             rank: RankWithBowers::Ace,
         };
         let turned_down = trump_candidate.clone();
-        let mut players = [
-            TestBidder::does_nothing(),
-            TestBidder::does_nothing(),
-            TestBidder::does_nothing(),
-            TestBidder::does_nothing(),
-        ];
-        let mut hands = [
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-        ];
+        let mut players = make_players();
+        let mut hands = make_empty_hands();
+        let expected_return_value = BidResultAll::NoOneCalled;
+        let bid_result = expected_return_value.clone();
         let expected_results = [
             BidPhase::FirstRoundFirstPlayer { trump_candidate },
             BidPhase::FirstRoundSecondPlayer { trump_candidate },
@@ -472,11 +470,8 @@ mod tests {
             BidPhase::SecondRoundSecondPlayer { turned_down },
             BidPhase::SecondRoundThirdPlayer { turned_down },
             BidPhase::SecondRoundFourthPlayer { turned_down },
-            BidPhase::Done {
-                bid_result: BidResultAll::NoOneCalled,
-            },
+            BidPhase::Done { bid_result },
         ];
-        let expected_return_value = BidResultAll::NoOneCalled;
         check_sequence(
             dealer,
             trump_candidate,
@@ -490,172 +485,113 @@ mod tests {
     #[test]
     fn ordered_up() {
         let dealer = Position::North;
-        let original_trump_candidate = CardLogic {
+        let trump_candidate = CardLogic {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
-        let mut players: [TestBidder; 4] = [
-            TestBidder::does_nothing(),
-            TestBidder::does_nothing(),
-            TestBidder::orders_up(),
-            TestBidder::does_nothing(),
-        ];
-        let mut hands = [
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-        ];
-        let mut bid_state = BidState::create(dealer, original_trump_candidate);
-        assert_eq!(bid_state.dealer, dealer);
-        match bid_state.phase {
-            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
-                assert_eq!(trump_candidate, original_trump_candidate)
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            None => {
-                assert_eq!(bid_state.dealer, dealer);
-                match bid_state.phase {
-                    BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
-                        assert_eq!(trump_candidate, original_trump_candidate)
-                    }
-                    _ => assert!(false),
-                }
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            None => {
-                assert_eq!(bid_state.dealer, dealer);
-                match bid_state.phase {
-                    BidPhase::OrderedUp {
-                        caller,
-                        card_ordered,
-                    } => {
-                        assert_eq!(caller, Position::South);
-                        assert_eq!(card_ordered, original_trump_candidate)
-                    }
-                    _ => assert!(false),
-                }
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            None => {
-                assert_eq!(bid_state.dealer, dealer);
-                match bid_state.phase {
-                    BidPhase::Done { ref bid_result } => match bid_result {
-                        BidResultAll::Called { trump, caller } => {
-                            assert_eq!(caller, &Position::South);
-                            assert_eq!(trump, &original_trump_candidate.suit)
-                        }
-                        _ => assert!(false),
-                    },
-                    _ => assert!(false),
-                }
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            Some(bid_result) => match bid_result {
-                BidResultAll::Called { trump, caller } => {
-                    assert_eq!(caller, Position::South);
-                    assert_eq!(trump, original_trump_candidate.suit)
-                }
-                _ => assert!(false),
+        let trump = trump_candidate.suit;
+        let card_ordered = trump_candidate.clone();
+        let mut players = make_players();
+        let caller = Position::South;
+        players[caller.index()] = TestBidder::orders_up();
+        let mut hands = make_empty_hands();
+        let expected_return_value = BidResultAll::Called { trump, caller };
+        let bid_result = expected_return_value.clone();
+        let expected_results = [
+            BidPhase::FirstRoundFirstPlayer { trump_candidate },
+            BidPhase::FirstRoundSecondPlayer { trump_candidate },
+            BidPhase::OrderedUp {
+                caller,
+                card_ordered,
             },
-            _ => assert!(false),
-        }
+            BidPhase::Done { bid_result },
+        ];
+        check_sequence(
+            dealer,
+            trump_candidate,
+            &mut players,
+            &mut hands,
+            &expected_results,
+            expected_return_value,
+        )
     }
 
     #[test]
     fn ordered_up_alone() {
         let dealer = Position::North;
-        let original_trump_candidate = CardLogic {
+        let trump_candidate = CardLogic {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
-        let mut players: [TestBidder; 4] = [
-            TestBidder::does_nothing(),
-            TestBidder::does_nothing(),
-            TestBidder::orders_up_alone(),
-            TestBidder::does_nothing(),
-        ];
-        let mut hands = [
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-            HandLogic { cards: vec![] },
-        ];
-        let mut bid_state = BidState::create(dealer, original_trump_candidate);
-        assert_eq!(bid_state.dealer, dealer);
-        match bid_state.phase {
-            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
-                assert_eq!(trump_candidate, original_trump_candidate)
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            None => {
-                assert_eq!(bid_state.dealer, dealer);
-                match bid_state.phase {
-                    BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
-                        assert_eq!(trump_candidate, original_trump_candidate)
-                    }
-                    _ => assert!(false),
-                }
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            None => {
-                assert_eq!(bid_state.dealer, dealer);
-                match bid_state.phase {
-                    BidPhase::OrderedUpAlone {
-                        caller,
-                        card_ordered,
-                    } => {
-                        assert_eq!(caller, Position::South);
-                        assert_eq!(card_ordered, original_trump_candidate)
-                    }
-                    _ => assert!(false),
-                }
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            None => {
-                assert_eq!(bid_state.dealer, dealer);
-                match bid_state.phase {
-                    BidPhase::Done { ref bid_result } => match bid_result {
-                        BidResultAll::CalledAlone { trump, caller } => {
-                            assert_eq!(caller, &Position::South);
-                            assert_eq!(trump, &original_trump_candidate.suit)
-                        }
-                        _ => assert!(false),
-                    },
-                    _ => assert!(false),
-                }
-            }
-            _ => assert!(false),
-        }
-        match bid_state.step(&mut players, &mut hands) {
-            Some(bid_result) => match bid_result {
-                BidResultAll::CalledAlone { trump, caller } => {
-                    assert_eq!(caller, Position::South);
-                    assert_eq!(trump, original_trump_candidate.suit)
-                }
-                _ => assert!(false),
+        let card_ordered = trump_candidate.clone();
+        let mut players = make_players();
+        let caller = Position::South;
+        players[caller.index()] = TestBidder::orders_up_alone();
+        let mut hands = make_empty_hands();
+        let expected_return_value = BidResultAll::CalledAlone {
+            trump: trump_candidate.suit,
+            caller: Position::South,
+        };
+        let bid_result = expected_return_value.clone();
+        let expected_results = [
+            BidPhase::FirstRoundFirstPlayer { trump_candidate },
+            BidPhase::FirstRoundSecondPlayer { trump_candidate },
+            BidPhase::OrderedUpAlone {
+                caller,
+                card_ordered,
             },
-            _ => assert!(false),
-        }
+            BidPhase::Done { bid_result },
+        ];
+        check_sequence(
+            dealer,
+            trump_candidate,
+            &mut players,
+            &mut hands,
+            &expected_results,
+            expected_return_value,
+        )
     }
 
     #[test]
     fn ordered_up_defended_alone_first_opponent() {
-        todo!()
+        let dealer = Position::North;
+        let trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let trump = trump_candidate.suit;
+        let card_ordered = trump_candidate.clone();
+        let mut players = make_players();
+        let caller = Position::South;
+        players[caller.index()] = TestBidder::orders_up_alone();
+        let defender = Position::West;
+        players[defender.index()] = TestBidder::defends_alone();
+        players[defender.partner().index()] = TestBidder::defends_alone();
+        let mut hands = make_empty_hands();
+        let expected_return_value = BidResultAll::DefendedAlone {
+            trump,
+            caller,
+            defender,
+        };
+        let bid_result = expected_return_value.clone();
+        let expected_results = [
+            BidPhase::FirstRoundFirstPlayer { trump_candidate },
+            BidPhase::FirstRoundSecondPlayer { trump_candidate },
+            BidPhase::OrderedUpDefendedAlone {
+                caller,
+                card_ordered,
+                defender,
+            },
+            BidPhase::Done { bid_result },
+        ];
+        check_sequence(
+            dealer,
+            trump_candidate,
+            &mut players,
+            &mut hands,
+            &expected_results,
+            expected_return_value,
+        )
     }
 
     #[test]
@@ -681,6 +617,24 @@ mod tests {
     #[test]
     fn called_defended_alone_second_opponent() {
         todo!()
+    }
+
+    fn make_players() -> [TestBidder; 4] {
+        [
+            TestBidder::does_nothing(),
+            TestBidder::does_nothing(),
+            TestBidder::does_nothing(),
+            TestBidder::does_nothing(),
+        ]
+    }
+
+    fn make_empty_hands() -> [HandLogic; 4] {
+        [
+            HandLogic { cards: Vec::new() },
+            HandLogic { cards: Vec::new() },
+            HandLogic { cards: Vec::new() },
+            HandLogic { cards: Vec::new() },
+        ]
     }
 
     fn check_sequence(
