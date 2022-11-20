@@ -121,11 +121,8 @@ impl BidState {
                 card_ordered,
             } => {
                 let hand = &mut hands[self.dealer.index()];
-                hand.cards.push(*card_ordered);
-                let discard =
-                    players[self.dealer.index()].choose_discard(&hand, &card_ordered.suit);
-                //TODO: make this enforce that the card is in the hand
-                hand.cards.retain(|card| *card != discard);
+                let player = &mut players[self.dealer.index()];
+                BidState::discard(player, hand, *card_ordered);
                 self.phase = BidPhase::Done {
                     bid_result: BidResultAll::Called {
                         trump: card_ordered.suit,
@@ -139,11 +136,8 @@ impl BidState {
                 card_ordered,
             } => {
                 let hand = &mut hands[self.dealer.index()];
-                hand.cards.push(*card_ordered);
-                let discard =
-                    players[self.dealer.index()].choose_discard(&hand, &card_ordered.suit);
-                //TODO: make this enforce that the card is in the hand
-                hand.cards.retain(|card| *card != discard);
+                let player = &mut players[self.dealer.index()];
+                BidState::discard(player, hand, *card_ordered);
                 self.phase = BidPhase::Done {
                     bid_result: BidResultAll::CalledAlone {
                         trump: card_ordered.suit,
@@ -158,11 +152,8 @@ impl BidState {
                 defender,
             } => {
                 let hand = &mut hands[self.dealer.index()];
-                hand.cards.push(*card_ordered);
-                let discard =
-                    players[self.dealer.index()].choose_discard(&hand, &card_ordered.suit);
-                //TODO: make this enforce that the card is in the hand
-                hand.cards.retain(|card| *card != discard);
+                let player = &mut players[self.dealer.index()];
+                BidState::discard(player, hand, *card_ordered);
                 self.phase = BidPhase::Done {
                     bid_result: BidResultAll::DefendedAlone {
                         trump: card_ordered.suit,
@@ -279,6 +270,15 @@ impl BidState {
         }
     }
 
+    fn discard(dealer: &mut impl Player, hand: &mut HandLogic, card_ordered: CardLogic) -> () {
+        hand.cards.push(card_ordered);
+        let mut discard = dealer.choose_discard(&hand, &card_ordered.suit);
+        if !hand.cards.contains(&discard) {
+            discard = hand.cards[0];
+        }
+        hand.cards.retain(|card| *card != discard);
+    }
+
     fn call(
         dealer: &Position,
         bidder: Position,
@@ -349,6 +349,7 @@ mod tests {
         defend_alone: bool,
         trump_to_call: Option<Suit>,
         call_alone: bool,
+        card_to_discard: Option<CardLogic>,
     }
 
     impl TestBidder {
@@ -359,6 +360,7 @@ mod tests {
                 defend_alone: false,
                 trump_to_call: None,
                 call_alone: false,
+                card_to_discard: None,
             }
         }
 
@@ -369,6 +371,7 @@ mod tests {
                 defend_alone: false,
                 trump_to_call: None,
                 call_alone: false,
+                card_to_discard: None,
             }
         }
 
@@ -379,6 +382,7 @@ mod tests {
                 defend_alone: false,
                 trump_to_call: None,
                 call_alone: false,
+                card_to_discard: None,
             }
         }
 
@@ -389,6 +393,7 @@ mod tests {
                 defend_alone: true,
                 trump_to_call: None,
                 call_alone: false,
+                card_to_discard: None,
             }
         }
 
@@ -399,6 +404,7 @@ mod tests {
                 defend_alone: false,
                 trump_to_call: Some(trump),
                 call_alone: false,
+                card_to_discard: None,
             }
         }
 
@@ -409,6 +415,18 @@ mod tests {
                 defend_alone: false,
                 trump_to_call: Some(trump),
                 call_alone: true,
+                card_to_discard: None,
+            }
+        }
+
+        fn discards(card: CardLogic) -> TestBidder {
+            TestBidder {
+                order_up: false,
+                order_up_alone: false,
+                defend_alone: false,
+                trump_to_call: None,
+                call_alone: false,
+                card_to_discard: Some(card),
             }
         }
     }
@@ -469,6 +487,13 @@ mod tests {
         ) -> bool {
             self.defend_alone
         }
+
+        fn choose_discard(&mut self, hand: &HandLogic, _trump: &Suit) -> CardLogic {
+            match self.card_to_discard {
+                Some(card) => card,
+                None => hand.cards[0],
+            }
+        }
     }
 
     #[test]
@@ -480,7 +505,7 @@ mod tests {
         };
         let turned_down = trump_candidate.clone();
         let mut players = make_players();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::NoOneCalled;
         let bid_result = expected_return_value.clone();
         let expected_results = [
@@ -505,6 +530,45 @@ mod tests {
     }
 
     #[test]
+    fn ordered_up_only_allows_valid_discards() {
+        let dealer = Position::North;
+        let trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let trump = trump_candidate.suit;
+        let card_ordered = trump_candidate.clone();
+        let mut players = make_players();
+        players[dealer.index()] = TestBidder::discards(CardLogic {
+            suit: Suit::Spades,
+            rank: RankWithBowers::Nine,
+        });
+        let caller = Position::South;
+        players[caller.index()] = TestBidder::orders_up();
+        let mut hands = make_hands();
+        let expected_return_value = BidResultAll::Called { trump, caller };
+        let bid_result = expected_return_value.clone();
+        let expected_results = [
+            BidPhase::FirstRoundFirstPlayer { trump_candidate },
+            BidPhase::FirstRoundSecondPlayer { trump_candidate },
+            BidPhase::OrderedUp {
+                caller,
+                card_ordered,
+            },
+            BidPhase::Done { bid_result },
+        ];
+        check_sequence(
+            dealer,
+            trump_candidate,
+            &mut players,
+            &mut hands,
+            &expected_results,
+            expected_return_value,
+        );
+        assert_eq!(hands[dealer.index()].cards, vec![trump_candidate])
+    }
+
+    #[test]
     fn ordered_up() {
         let dealer = Position::North;
         let trump_candidate = CardLogic {
@@ -516,7 +580,7 @@ mod tests {
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = TestBidder::orders_up();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::Called { trump, caller };
         let bid_result = expected_return_value.clone();
         let expected_results = [
@@ -549,7 +613,7 @@ mod tests {
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = TestBidder::orders_up_alone();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::CalledAlone {
             trump: trump_candidate.suit,
             caller: Position::South,
@@ -589,7 +653,7 @@ mod tests {
         let defender = Position::West;
         players[defender.index()] = TestBidder::defends_alone();
         players[defender.partner().index()] = TestBidder::defends_alone();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::DefendedAlone {
             trump,
             caller,
@@ -630,7 +694,7 @@ mod tests {
         players[caller.index()] = TestBidder::orders_up_alone();
         let defender = Position::East;
         players[defender.index()] = TestBidder::defends_alone();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::DefendedAlone {
             trump,
             caller,
@@ -668,7 +732,7 @@ mod tests {
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = TestBidder::calls(Suit::Hearts);
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::NoOneCalled;
         let bid_result = expected_return_value.clone();
         let expected_results = [
@@ -704,7 +768,7 @@ mod tests {
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = TestBidder::calls(trump);
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::Called { trump, caller };
         let bid_result = expected_return_value.clone();
         let expected_results = [
@@ -738,7 +802,7 @@ mod tests {
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = TestBidder::calls_alone(trump);
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::CalledAlone { trump, caller };
         let bid_result = expected_return_value.clone();
         let expected_results = [
@@ -775,7 +839,7 @@ mod tests {
         let defender = Position::West;
         players[defender.index()] = TestBidder::defends_alone();
         players[defender.partner().index()] = TestBidder::defends_alone();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::DefendedAlone {
             trump,
             caller,
@@ -815,7 +879,7 @@ mod tests {
         players[caller.index()] = TestBidder::calls_alone(trump);
         let defender = Position::East;
         players[defender.index()] = TestBidder::defends_alone();
-        let mut hands = make_empty_hands();
+        let mut hands = make_hands();
         let expected_return_value = BidResultAll::DefendedAlone {
             trump,
             caller,
@@ -850,12 +914,32 @@ mod tests {
         ]
     }
 
-    fn make_empty_hands() -> [HandLogic; 4] {
+    fn make_hands() -> [HandLogic; 4] {
         [
-            HandLogic { cards: Vec::new() },
-            HandLogic { cards: Vec::new() },
-            HandLogic { cards: Vec::new() },
-            HandLogic { cards: Vec::new() },
+            HandLogic {
+                cards: vec![CardLogic {
+                    rank: RankWithBowers::King,
+                    suit: Suit::Spades,
+                }],
+            },
+            HandLogic {
+                cards: vec![CardLogic {
+                    rank: RankWithBowers::King,
+                    suit: Suit::Hearts,
+                }],
+            },
+            HandLogic {
+                cards: vec![CardLogic {
+                    rank: RankWithBowers::King,
+                    suit: Suit::Diamonds,
+                }],
+            },
+            HandLogic {
+                cards: vec![CardLogic {
+                    rank: RankWithBowers::King,
+                    suit: Suit::Clubs,
+                }],
+            },
         ]
     }
 
