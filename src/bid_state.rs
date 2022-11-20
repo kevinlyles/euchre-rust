@@ -762,12 +762,83 @@ mod tests {
 
     #[test]
     fn called_defended_alone_first_opponent() {
-        todo!()
+        let dealer = Position::North;
+        let trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let turned_down = trump_candidate.clone();
+        let trump = Suit::Spades;
+        let mut players = make_players();
+        let caller = Position::South;
+        players[caller.index()] = TestBidder::calls_alone(trump);
+        let defender = Position::West;
+        players[defender.index()] = TestBidder::defends_alone();
+        players[defender.partner().index()] = TestBidder::defends_alone();
+        let mut hands = make_empty_hands();
+        let expected_return_value = BidResultAll::DefendedAlone {
+            trump,
+            caller,
+            defender,
+        };
+        let bid_result = expected_return_value.clone();
+        let expected_results = [
+            BidPhase::FirstRoundFirstPlayer { trump_candidate },
+            BidPhase::FirstRoundSecondPlayer { trump_candidate },
+            BidPhase::FirstRoundThirdPlayer { trump_candidate },
+            BidPhase::FirstRoundFourthPlayer { trump_candidate },
+            BidPhase::SecondRoundFirstPlayer { turned_down },
+            BidPhase::SecondRoundSecondPlayer { turned_down },
+            BidPhase::Done { bid_result },
+        ];
+        check_sequence(
+            dealer,
+            trump_candidate,
+            &mut players,
+            &mut hands,
+            &expected_results,
+            expected_return_value,
+        )
     }
 
     #[test]
     fn called_defended_alone_second_opponent() {
-        todo!()
+        let dealer = Position::North;
+        let trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let turned_down = trump_candidate.clone();
+        let trump = Suit::Spades;
+        let mut players = make_players();
+        let caller = Position::South;
+        players[caller.index()] = TestBidder::calls_alone(trump);
+        let defender = Position::East;
+        players[defender.index()] = TestBidder::defends_alone();
+        let mut hands = make_empty_hands();
+        let expected_return_value = BidResultAll::DefendedAlone {
+            trump,
+            caller,
+            defender,
+        };
+        let bid_result = expected_return_value.clone();
+        let expected_results = [
+            BidPhase::FirstRoundFirstPlayer { trump_candidate },
+            BidPhase::FirstRoundSecondPlayer { trump_candidate },
+            BidPhase::FirstRoundThirdPlayer { trump_candidate },
+            BidPhase::FirstRoundFourthPlayer { trump_candidate },
+            BidPhase::SecondRoundFirstPlayer { turned_down },
+            BidPhase::SecondRoundSecondPlayer { turned_down },
+            BidPhase::Done { bid_result },
+        ];
+        check_sequence(
+            dealer,
+            trump_candidate,
+            &mut players,
+            &mut hands,
+            &expected_results,
+            expected_return_value,
+        )
     }
 
     fn make_players() -> [TestBidder; 4] {
