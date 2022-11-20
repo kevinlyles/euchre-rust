@@ -2,12 +2,13 @@ use crate::{
     bid_result::BidResultAll, card::CardLogic, hand::HandLogic, player::Player, position::Position,
 };
 
+#[derive(PartialEq, Eq)]
 pub struct BidState {
     pub dealer: Position,
     pub phase: BidPhase,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BidPhase {
     FirstRoundFirstPlayer {
         trump_candidate: CardLogic,
@@ -476,14 +477,203 @@ mod tests {
         }
     }
 
+    struct AlwaysOrdersUp {}
+    impl Player for AlwaysOrdersUp {
+        fn should_order_up(
+            &mut self,
+            _hand: &HandLogic,
+            _dealer: &Position,
+            _trump_candidate: &CardLogic,
+        ) -> bool {
+            true
+        }
+    }
+
     #[test]
     fn ordered_up() {
-        todo!()
+        let dealer = Position::North;
+        let original_trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let mut players: [Box<dyn Player>; 4] = [
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysOrdersUp {}),
+            Box::new(AlwaysPasses {}),
+        ];
+        let mut hands = [
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+        ];
+        let mut bid_state = BidState::create(dealer, original_trump_candidate);
+        assert_eq!(bid_state.dealer, dealer);
+        match bid_state.phase {
+            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
+                assert_eq!(trump_candidate, original_trump_candidate)
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
+                        assert_eq!(trump_candidate, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::OrderedUp {
+                        caller,
+                        card_ordered,
+                    } => {
+                        assert_eq!(caller, Position::South);
+                        assert_eq!(card_ordered, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::Done { ref bid_result } => match bid_result {
+                        BidResultAll::Called { trump, caller } => {
+                            assert_eq!(caller, &Position::South);
+                            assert_eq!(trump, &original_trump_candidate.suit)
+                        }
+                        _ => assert!(false),
+                    },
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            Some(bid_result) => match bid_result {
+                BidResultAll::Called { trump, caller } => {
+                    assert_eq!(caller, Position::South);
+                    assert_eq!(trump, original_trump_candidate.suit)
+                }
+                _ => assert!(false),
+            },
+            _ => assert!(false),
+        }
+    }
+
+    struct AlwaysOrdersUpAlone {}
+    impl Player for AlwaysOrdersUpAlone {
+        fn should_order_up(
+            &mut self,
+            _hand: &HandLogic,
+            _dealer: &Position,
+            _trump_candidate: &CardLogic,
+        ) -> bool {
+            true
+        }
+
+        fn should_order_up_alone(
+            &mut self,
+            _hand: &HandLogic,
+            _dealer: &Position,
+            _trump_candidate: &CardLogic,
+        ) -> bool {
+            true
+        }
     }
 
     #[test]
     fn ordered_up_alone() {
-        todo!()
+        let dealer = Position::North;
+        let original_trump_candidate = CardLogic {
+            suit: Suit::Hearts,
+            rank: RankWithBowers::Ace,
+        };
+        let mut players: [Box<dyn Player>; 4] = [
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysPasses {}),
+            Box::new(AlwaysOrdersUpAlone {}),
+            Box::new(AlwaysPasses {}),
+        ];
+        let mut hands = [
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+            HandLogic { cards: vec![] },
+        ];
+        let mut bid_state = BidState::create(dealer, original_trump_candidate);
+        assert_eq!(bid_state.dealer, dealer);
+        match bid_state.phase {
+            BidPhase::FirstRoundFirstPlayer { trump_candidate } => {
+                assert_eq!(trump_candidate, original_trump_candidate)
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::FirstRoundSecondPlayer { trump_candidate } => {
+                        assert_eq!(trump_candidate, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::OrderedUpAlone {
+                        caller,
+                        card_ordered,
+                    } => {
+                        assert_eq!(caller, Position::South);
+                        assert_eq!(card_ordered, original_trump_candidate)
+                    }
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            None => {
+                assert_eq!(bid_state.dealer, dealer);
+                match bid_state.phase {
+                    BidPhase::Done { ref bid_result } => match bid_result {
+                        BidResultAll::CalledAlone { trump, caller } => {
+                            assert_eq!(caller, &Position::South);
+                            assert_eq!(trump, &original_trump_candidate.suit)
+                        }
+                        _ => assert!(false),
+                    },
+                    _ => assert!(false),
+                }
+            }
+            _ => assert!(false),
+        }
+        match bid_state.step(&mut players, &mut hands) {
+            Some(bid_result) => match bid_result {
+                BidResultAll::CalledAlone { trump, caller } => {
+                    assert_eq!(caller, Position::South);
+                    assert_eq!(trump, original_trump_candidate.suit)
+                }
+                _ => assert!(false),
+            },
+            _ => assert!(false),
+        }
     }
 
     #[test]

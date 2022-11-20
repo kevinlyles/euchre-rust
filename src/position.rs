@@ -1,6 +1,6 @@
 use crate::bid_result::BidResultCalled;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Position {
     West,
     North,
