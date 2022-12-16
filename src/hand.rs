@@ -1,6 +1,6 @@
-use crate::card::CardLogic;
+use crate::card::Card;
 
 #[derive(Clone, PartialEq)]
-pub struct HandLogic {
-    pub cards: Vec<CardLogic>,
+pub struct Hand {
+    pub cards: Vec<Card>,
 }

@@ -1,6 +1,6 @@
 use crate::{
-    bid_result::BidResultCalled, card::CardLogic, hand::HandLogic, player::Player,
-    position::Position, suit::Suit,
+    bid_result::BidResultCalled, card::Card, hand::Hand, player::Player, position::Position,
+    suit::Suit,
 };
 
 pub struct TrickState {
@@ -11,9 +11,9 @@ pub struct TrickState {
 
 pub enum TrickPhase {
     BeforeFirstTrick,
-    BeforeSecondTrick { cards_played: [CardLogic; 1] },
-    BeforeThirdTrick { cards_played: [CardLogic; 2] },
-    BeforeFourthTrick { cards_played: [CardLogic; 3] },
+    BeforeSecondTrick { cards_played: [Card; 1] },
+    BeforeThirdTrick { cards_played: [Card; 2] },
+    BeforeFourthTrick { cards_played: [Card; 3] },
     Done { trick_winner: Position },
 }
 
@@ -29,7 +29,7 @@ impl TrickState {
     pub fn step(
         &mut self,
         players: &mut [impl Player; 4],
-        hands: &mut [HandLogic; 4],
+        hands: &mut [Hand; 4],
     ) -> Option<Position> {
         match self.phase {
             TrickPhase::BeforeFirstTrick => {
@@ -116,10 +116,10 @@ impl TrickState {
     fn play_card(
         player: &Position,
         players: &mut [impl Player; 4],
-        hands: &mut [HandLogic; 4],
+        hands: &mut [Hand; 4],
         trump: &Suit,
         suit_led: &Suit,
-    ) -> CardLogic {
+    ) -> Card {
         let hand = &mut hands[player.index()];
         let mut card = players[player.index()].play_card(&hand, &trump, None);
         if !hand.cards.contains(&card) {
@@ -138,7 +138,7 @@ impl TrickState {
     fn get_winning_position(
         bid_result: &BidResultCalled,
         leader: &Position,
-        cards_played: &[CardLogic],
+        cards_played: &[Card],
     ) -> Position {
         //TODO: see if we can combine these steps?
         let winning_card = cards_played

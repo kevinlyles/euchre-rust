@@ -1,67 +1,67 @@
-use crate::{card::CardLogic, hand::HandLogic, position::Position, suit::Suit};
+use crate::{card::Card, hand::Hand, position::Position, suit::Suit};
 
 pub trait Player {
     fn should_order_up(
         &mut self,
-        _hand: &HandLogic,
+        _hand: &Hand,
         _dealer: &Position,
-        _trump_candidate: &CardLogic,
+        _trump_candidate: &Card,
     ) -> bool {
         false
     }
 
     fn should_order_up_alone(
         &mut self,
-        _hand: &HandLogic,
+        _hand: &Hand,
         _dealer: &Position,
-        _trump_candidate: &CardLogic,
+        _trump_candidate: &Card,
     ) -> bool {
         false
     }
 
     fn should_defend_alone_ordered(
         &mut self,
-        _hand: &HandLogic,
+        _hand: &Hand,
         _dealer: &Position,
-        _trump_candidate: &CardLogic,
+        _trump_candidate: &Card,
     ) -> bool {
         false
     }
 
     fn call_trump(
         &mut self,
-        _hand: &HandLogic,
+        _hand: &Hand,
         _dealer: &Position,
-        _turned_down: &CardLogic,
+        _turned_down: &Card,
     ) -> Option<Suit> {
         None
     }
 
     fn should_call_alone(
         &mut self,
-        _hand: &HandLogic,
+        _hand: &Hand,
         _dealer: &Position,
         _trump: &Suit,
-        _turned_down: &CardLogic,
+        _turned_down: &Card,
     ) -> bool {
         false
     }
 
     fn should_defend_alone_called(
         &mut self,
-        _hand: &HandLogic,
+        _hand: &Hand,
         _dealer: &Position,
         _trump: &Suit,
-        _turned_down: &CardLogic,
+        _turned_down: &Card,
     ) -> bool {
         false
     }
 
-    fn choose_discard(&mut self, hand: &HandLogic, _trump: &Suit) -> CardLogic {
+    fn choose_discard(&mut self, hand: &Hand, _trump: &Suit) -> Card {
         hand.cards[0]
     }
 
-    fn play_card(&mut self, hand: &HandLogic, _trump: &Suit, led: Option<Suit>) -> CardLogic {
+    fn play_card(&mut self, hand: &Hand, _trump: &Suit, led: Option<Suit>) -> Card {
         match led {
             Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
                 Some(card) => *card,

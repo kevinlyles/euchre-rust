@@ -1,6 +1,4 @@
-use crate::{
-    bid_result::BidResultAll, card::CardLogic, hand::HandLogic, player::Player, position::Position,
-};
+use crate::{bid_result::BidResultAll, card::Card, hand::Hand, player::Player, position::Position};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BidState {
@@ -11,41 +9,41 @@ pub struct BidState {
 #[derive(Debug, PartialEq, Eq)]
 pub enum BidPhase {
     FirstRoundFirstPlayer {
-        trump_candidate: CardLogic,
+        trump_candidate: Card,
     },
     FirstRoundSecondPlayer {
-        trump_candidate: CardLogic,
+        trump_candidate: Card,
     },
     FirstRoundThirdPlayer {
-        trump_candidate: CardLogic,
+        trump_candidate: Card,
     },
     FirstRoundFourthPlayer {
-        trump_candidate: CardLogic,
+        trump_candidate: Card,
     },
     OrderedUp {
         caller: Position,
-        card_ordered: CardLogic,
+        card_ordered: Card,
     },
     OrderedUpAlone {
         caller: Position,
-        card_ordered: CardLogic,
+        card_ordered: Card,
     },
     OrderedUpDefendedAlone {
         caller: Position,
-        card_ordered: CardLogic,
+        card_ordered: Card,
         defender: Position,
     },
     SecondRoundFirstPlayer {
-        turned_down: CardLogic,
+        turned_down: Card,
     },
     SecondRoundSecondPlayer {
-        turned_down: CardLogic,
+        turned_down: Card,
     },
     SecondRoundThirdPlayer {
-        turned_down: CardLogic,
+        turned_down: Card,
     },
     SecondRoundFourthPlayer {
-        turned_down: CardLogic,
+        turned_down: Card,
     },
     Done {
         bid_result: BidResultAll,
@@ -53,7 +51,7 @@ pub enum BidPhase {
 }
 
 impl BidState {
-    pub fn create(dealer: Position, trump_candidate: CardLogic) -> BidState {
+    pub fn create(dealer: Position, trump_candidate: Card) -> BidState {
         BidState {
             dealer,
             phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
@@ -63,7 +61,7 @@ impl BidState {
     pub fn step(
         &mut self,
         players: &mut [impl Player; 4],
-        hands: &mut [HandLogic; 4],
+        hands: &mut [Hand; 4],
     ) -> Option<BidResultAll> {
         match &mut self.phase {
             BidPhase::FirstRoundFirstPlayer {
@@ -217,9 +215,9 @@ impl BidState {
     fn order_up(
         dealer: &Position,
         bidder: Position,
-        trump_candidate: &CardLogic,
+        trump_candidate: &Card,
         players: &mut [impl Player; 4],
-        hands: &[HandLogic; 4],
+        hands: &[Hand; 4],
     ) -> Option<BidPhase> {
         let bidder_index = bidder.index();
         if !players[bidder_index].should_order_up(&hands[bidder_index], dealer, trump_candidate) {
@@ -270,7 +268,7 @@ impl BidState {
         }
     }
 
-    fn discard(dealer: &mut impl Player, hand: &mut HandLogic, card_ordered: CardLogic) -> () {
+    fn discard(dealer: &mut impl Player, hand: &mut Hand, card_ordered: Card) -> () {
         hand.cards.push(card_ordered);
         let mut discard = dealer.choose_discard(&hand, &card_ordered.suit);
         if !hand.cards.contains(&discard) {
@@ -283,8 +281,8 @@ impl BidState {
         dealer: &Position,
         bidder: Position,
         players: &mut [impl Player; 4],
-        hands: &[HandLogic; 4],
-        turned_down: &CardLogic,
+        hands: &[Hand; 4],
+        turned_down: &Card,
     ) -> Option<BidResultAll> {
         match players[bidder.index()].call_trump(&hands[bidder.index()], &dealer, turned_down) {
             Some(trump) if trump != turned_down.suit => {
@@ -349,7 +347,7 @@ mod tests {
         defend_alone: bool,
         trump_to_call: Option<Suit>,
         call_alone: bool,
-        card_to_discard: Option<CardLogic>,
+        card_to_discard: Option<Card>,
     }
 
     impl TestBidder {
@@ -419,7 +417,7 @@ mod tests {
             }
         }
 
-        fn discards(card: CardLogic) -> TestBidder {
+        fn discards(card: Card) -> TestBidder {
             TestBidder {
                 order_up: false,
                 order_up_alone: false,
@@ -434,61 +432,61 @@ mod tests {
     impl Player for TestBidder {
         fn should_order_up(
             &mut self,
-            _hand: &HandLogic,
+            _hand: &Hand,
             _dealer: &Position,
-            _trump_candidate: &CardLogic,
+            _trump_candidate: &Card,
         ) -> bool {
             self.order_up
         }
 
         fn should_order_up_alone(
             &mut self,
-            _hand: &HandLogic,
+            _hand: &Hand,
             _dealer: &Position,
-            _trump_candidate: &CardLogic,
+            _trump_candidate: &Card,
         ) -> bool {
             self.order_up_alone
         }
 
         fn should_defend_alone_ordered(
             &mut self,
-            _hand: &HandLogic,
+            _hand: &Hand,
             _dealer: &Position,
-            _trump_candidate: &CardLogic,
+            _trump_candidate: &Card,
         ) -> bool {
             self.defend_alone
         }
 
         fn call_trump(
             &mut self,
-            _hand: &HandLogic,
+            _hand: &Hand,
             _dealer: &Position,
-            _turned_down: &CardLogic,
+            _turned_down: &Card,
         ) -> Option<Suit> {
             self.trump_to_call
         }
 
         fn should_call_alone(
             &mut self,
-            _hand: &HandLogic,
+            _hand: &Hand,
             _dealer: &Position,
             _trump: &Suit,
-            _turned_down: &CardLogic,
+            _turned_down: &Card,
         ) -> bool {
             self.call_alone
         }
 
         fn should_defend_alone_called(
             &mut self,
-            _hand: &HandLogic,
+            _hand: &Hand,
             _dealer: &Position,
             _trump: &Suit,
-            _turned_down: &CardLogic,
+            _turned_down: &Card,
         ) -> bool {
             self.defend_alone
         }
 
-        fn choose_discard(&mut self, hand: &HandLogic, _trump: &Suit) -> CardLogic {
+        fn choose_discard(&mut self, hand: &Hand, _trump: &Suit) -> Card {
             match self.card_to_discard {
                 Some(card) => card,
                 None => hand.cards[0],
@@ -499,7 +497,7 @@ mod tests {
     #[test]
     fn everyone_passes() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -532,14 +530,14 @@ mod tests {
     #[test]
     fn ordered_up_only_allows_valid_discards() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
         let trump = trump_candidate.suit;
         let card_ordered = trump_candidate.clone();
         let mut players = make_players();
-        players[dealer.index()] = TestBidder::discards(CardLogic {
+        players[dealer.index()] = TestBidder::discards(Card {
             suit: Suit::Spades,
             rank: RankWithBowers::Nine,
         });
@@ -571,7 +569,7 @@ mod tests {
     #[test]
     fn ordered_up() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -605,7 +603,7 @@ mod tests {
     #[test]
     fn ordered_up_alone() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -641,7 +639,7 @@ mod tests {
     #[test]
     fn ordered_up_defended_alone_first_opponent() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -683,7 +681,7 @@ mod tests {
     #[test]
     fn ordered_up_defended_alone_second_opponent() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -724,7 +722,7 @@ mod tests {
     #[test]
     fn called_requires_new_suit() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -759,7 +757,7 @@ mod tests {
     #[test]
     fn called() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -793,7 +791,7 @@ mod tests {
     #[test]
     fn called_alone() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -827,7 +825,7 @@ mod tests {
     #[test]
     fn called_defended_alone_first_opponent() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -868,7 +866,7 @@ mod tests {
     #[test]
     fn called_defended_alone_second_opponent() {
         let dealer = Position::North;
-        let trump_candidate = CardLogic {
+        let trump_candidate = Card {
             suit: Suit::Hearts,
             rank: RankWithBowers::Ace,
         };
@@ -914,28 +912,28 @@ mod tests {
         ]
     }
 
-    fn make_hands() -> [HandLogic; 4] {
+    fn make_hands() -> [Hand; 4] {
         [
-            HandLogic {
-                cards: vec![CardLogic {
+            Hand {
+                cards: vec![Card {
                     rank: RankWithBowers::King,
                     suit: Suit::Spades,
                 }],
             },
-            HandLogic {
-                cards: vec![CardLogic {
+            Hand {
+                cards: vec![Card {
                     rank: RankWithBowers::King,
                     suit: Suit::Hearts,
                 }],
             },
-            HandLogic {
-                cards: vec![CardLogic {
+            Hand {
+                cards: vec![Card {
                     rank: RankWithBowers::King,
                     suit: Suit::Diamonds,
                 }],
             },
-            HandLogic {
-                cards: vec![CardLogic {
+            Hand {
+                cards: vec![Card {
                     rank: RankWithBowers::King,
                     suit: Suit::Clubs,
                 }],
@@ -945,9 +943,9 @@ mod tests {
 
     fn check_sequence(
         dealer: Position,
-        trump_candidate: CardLogic,
+        trump_candidate: Card,
         players: &mut [impl Player; 4],
-        hands: &mut [HandLogic; 4],
+        hands: &mut [Hand; 4],
         expected_results: &[BidPhase],
         expected_return_value: BidResultAll,
     ) {

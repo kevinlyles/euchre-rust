@@ -7,9 +7,9 @@ pub struct BasicPlayer {
 impl Player for BasicPlayer {
     fn should_order_up(
         &mut self,
-        hand: &crate::hand::HandLogic,
+        hand: &crate::hand::Hand,
         dealer: &crate::position::Position,
-        trump_candidate: &crate::card::CardLogic,
+        trump_candidate: &crate::card::Card,
     ) -> bool {
         let trump_cards = hand.cards.iter().filter(|card| {
             card.suit == trump_candidate.suit
@@ -25,9 +25,9 @@ impl Player for BasicPlayer {
 
     fn call_trump(
         &mut self,
-        hand: &crate::hand::HandLogic,
+        hand: &crate::hand::Hand,
         _dealer: &Position,
-        _turned_down: &crate::card::CardLogic,
+        _turned_down: &crate::card::Card,
     ) -> Option<crate::suit::Suit> {
         if hand
             .cards

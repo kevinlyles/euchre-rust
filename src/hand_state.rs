@@ -1,8 +1,8 @@
 use crate::{
     bid_result::{BidResultAll, BidResultCalled},
     bid_state::BidState,
-    card::CardLogic,
-    hand::HandLogic,
+    card::Card,
+    hand::Hand,
     player::Player,
     position::Position,
     rank_with_bowers::RankWithBowers,
@@ -12,7 +12,7 @@ use crate::{
 
 pub struct HandState {
     pub dealer: Position,
-    hands: [HandLogic; 4],
+    hands: [Hand; 4],
     pub phase: HandPhase,
 }
 
@@ -51,11 +51,7 @@ pub enum HandPhase {
 }
 
 impl HandState {
-    pub fn create(
-        dealer: Position,
-        trump_candidate: CardLogic,
-        hands: [HandLogic; 4],
-    ) -> HandState {
+    pub fn create(dealer: Position, trump_candidate: Card, hands: [Hand; 4]) -> HandState {
         HandState {
             dealer,
             hands,
@@ -190,19 +186,19 @@ impl HandState {
         }
     }
 
-    fn update_bowers(hands: &mut [HandLogic; 4], trump: &Suit) -> () {
+    fn update_bowers(hands: &mut [Hand; 4], trump: &Suit) -> () {
         for hand in hands.iter_mut() {
             for card in hand.cards.iter_mut() {
                 if card.rank != RankWithBowers::Jack {
                     continue;
                 }
                 if card.suit == *trump {
-                    *card = CardLogic {
+                    *card = Card {
                         rank: RankWithBowers::RightBower,
                         suit: *trump,
                     };
                 } else if card.suit.other_suit_of_same_color() == *trump {
-                    *card = CardLogic {
+                    *card = Card {
                         rank: RankWithBowers::LeftBower,
                         suit: *trump,
                     };
