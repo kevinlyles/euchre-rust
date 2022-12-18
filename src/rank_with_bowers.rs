@@ -32,6 +32,20 @@ impl Display for RankWithBowers {
 }
 
 impl RankWithBowers {
+    pub fn try_create(name: &str) -> Option<RankWithBowers> {
+        match name {
+            "R" => Some(Self::RightBower),
+            "L" => Some(Self::LeftBower),
+            "A" => Some(Self::Ace),
+            "K" => Some(Self::King),
+            "Q" => Some(Self::Queen),
+            "J" => Some(Self::Jack),
+            "10" | "T" => Some(Self::Ten),
+            "9" | "N" => Some(Self::Nine),
+            _ => None,
+        }
+    }
+
     pub fn rank_for_display(&self) -> Rank {
         match self {
             Self::RightBower | Self::LeftBower | Self::Jack => Rank::Jack,

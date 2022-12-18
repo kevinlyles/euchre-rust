@@ -11,6 +11,7 @@ mod deck;
 mod game_state;
 mod hand;
 mod hand_state;
+mod hands_iterator;
 mod logger;
 mod player;
 mod players;

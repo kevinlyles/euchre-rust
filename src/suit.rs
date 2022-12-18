@@ -10,6 +10,16 @@ pub enum Suit {
 }
 
 impl Suit {
+    pub fn try_create(name: &str) -> Option<Suit> {
+        match name {
+            "C" => Some(Self::Clubs),
+            "D" => Some(Self::Diamonds),
+            "H" => Some(Self::Hearts),
+            "S" => Some(Self::Spades),
+            _ => None,
+        }
+    }
+
     pub fn other_suit_of_same_color(&self) -> Suit {
         match self {
             Self::Spades => Suit::Clubs,

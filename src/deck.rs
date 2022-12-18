@@ -11,7 +11,7 @@ pub struct Deck {
 }
 
 impl Deck {
-    fn create_all_cards() -> Vec<Card> {
+    pub fn create_all_cards() -> Vec<Card> {
         let mut cards = Vec::with_capacity(24);
         for suit in Suit::into_enum_iter() {
             for rank in RankWithBowers::into_enum_iter().skip(2) {

@@ -27,6 +27,19 @@ impl fmt::Display for Card {
     }
 }
 
+impl Card {
+    pub fn try_create(name: &str) -> Option<Card> {
+        let (rank_name, suit_name) = name.split_at(name.len() - 1);
+        match RankWithBowers::try_create(rank_name) {
+            Some(rank) => match Suit::try_create(suit_name) {
+                Some(suit) => Some(Card { rank, suit }),
+                None => None,
+            },
+            None => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -66,5 +79,22 @@ mod tests {
     #[test_case(Card {suit: Suit::Spades, rank: RankWithBowers::Nine} => "\u{1F0A9}")]
     fn display(card: Card) -> String {
         card.to_string()
+    }
+
+    #[test_case("9C" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Clubs}))]
+    #[test_case("9D" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Diamonds}))]
+    #[test_case("9H" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Hearts}))]
+    #[test_case("9S" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Spades}))]
+    #[test_case("NC" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Clubs}))]
+    #[test_case("10C" => Some(Card {rank:RankWithBowers::Ten, suit: Suit::Clubs}))]
+    #[test_case("TC" => Some(Card {rank:RankWithBowers::Ten, suit: Suit::Clubs}))]
+    #[test_case("JC" => Some(Card {rank:RankWithBowers::Jack, suit: Suit::Clubs}))]
+    #[test_case("QC" => Some(Card {rank:RankWithBowers::Queen, suit: Suit::Clubs}))]
+    #[test_case("KC" => Some(Card {rank:RankWithBowers::King, suit: Suit::Clubs}))]
+    #[test_case("AC" => Some(Card {rank:RankWithBowers::Ace, suit: Suit::Clubs}))]
+    #[test_case("LC" => Some(Card {rank:RankWithBowers::LeftBower, suit: Suit::Clubs}))]
+    #[test_case("RC" => Some(Card {rank:RankWithBowers::RightBower, suit: Suit::Clubs}))]
+    fn try_create(name: &str) -> Option<Card> {
+        Card::try_create(name)
     }
 }

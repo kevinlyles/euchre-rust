@@ -3,6 +3,7 @@ use crate::{
     bid_state::BidState,
     card::Card,
     hand::Hand,
+    hands_iterator::HandsIterator,
     player::Player,
     position::Position,
     rank_with_bowers::RankWithBowers,
@@ -58,6 +59,63 @@ impl HandState {
             phase: HandPhase::Bidding {
                 bid_state: BidState::create(dealer, trump_candidate),
             },
+        }
+    }
+
+    pub fn create_with_scenario(
+        players: &mut [impl Player; 4],
+        dealer: Position,
+        my_hand: Hand,
+        trump_candidate: Card,
+        bid_result: BidResultCalled,
+    ) -> impl Iterator<Item = HandState> + '_ {
+        HandsIterator::create(my_hand, trump_candidate)
+            .into_iter()
+            .map(move |hands| {
+                HandState::create_hand_state(
+                    players,
+                    dealer,
+                    hands,
+                    trump_candidate,
+                    bid_result.clone(),
+                )
+            })
+    }
+
+    fn create_hand_state(
+        players: &mut [impl Player; 4],
+        dealer: Position,
+        hands: [Hand; 4],
+        trump_candidate: Card,
+        bid_result: BidResultCalled,
+    ) -> HandState {
+        match bid_result {
+            BidResultCalled::Called { trump, .. }
+            | BidResultCalled::CalledAlone { trump, .. }
+            | BidResultCalled::DefendedAlone { trump, .. } => {
+                let mut hands = hands;
+                if trump == trump_candidate.suit {
+                    let hand = &mut hands[dealer.index()];
+                    hand.cards.push(trump_candidate);
+                    let mut discard =
+                        players[dealer.index()].choose_discard(&hand, &trump_candidate.suit);
+                    if !hand.cards.contains(&discard) {
+                        discard = hand.cards[0];
+                    }
+                    hand.cards.retain(|&card| card != discard);
+                }
+                HandState {
+                    dealer,
+                    hands,
+                    phase: HandPhase::FirstTrick {
+                        bid_result: bid_result.clone(),
+                        trick_state: TrickState::create(
+                            bid_result.clone(),
+                            dealer.next_position_playing(&bid_result),
+                        ),
+                    },
+                }
+            }
         }
     }
 
