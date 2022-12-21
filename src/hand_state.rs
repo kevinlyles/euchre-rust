@@ -65,38 +65,25 @@ impl HandState {
     }
 
     pub fn create_with_scenario(
-        players: &mut [impl Player; 4],
-        dealer: Position,
         my_hand: Hand,
         trump_candidate: Card,
-        bid_result: BidResultCalled,
-    ) -> impl Iterator<Item = HandState> + '_ {
+    ) -> impl Iterator<Item = [Hand; 4]> {
         HandsIterator::create(my_hand, trump_candidate)
-            .into_iter()
-            .map(move |hands| {
-                HandState::create_hand_state(
-                    players,
-                    dealer,
-                    hands,
-                    trump_candidate,
-                    bid_result.clone(),
-                )
-            })
     }
 
-    fn create_hand_state(
+    pub fn create_hand_state(
         players: &mut [impl Player; 4],
         dealer: Position,
         hands: [Hand; 4],
         trump_candidate: Card,
-        bid_result: BidResultCalled,
+        bid_result: &BidResultCalled,
     ) -> HandState {
         match bid_result {
             BidResultCalled::Called { trump, .. }
             | BidResultCalled::CalledAlone { trump, .. }
             | BidResultCalled::DefendedAlone { trump, .. } => {
                 let mut hands = hands;
-                if trump == trump_candidate.suit {
+                if *trump == trump_candidate.suit {
                     let hand = &mut hands[dealer.index()];
                     hand.cards.push(trump_candidate);
                     let mut discard =

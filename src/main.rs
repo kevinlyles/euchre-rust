@@ -35,7 +35,7 @@ fn main() {
         .map(|()| log::set_max_level(LevelFilter::Info))
         .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
     let args: Vec<String> = env::args().collect();
-    let mut players = [
+    let players = [
         BasicPlayer {
             position: Position::North,
         },
@@ -51,17 +51,22 @@ fn main() {
     ];
     if args.contains(&"--simulate-hand".to_owned()) {
         let (hand, trump_candidate, dealer, bid_result) = process_args(args);
-        let players_clone = players.clone();
-        let hand_states = HandState::create_with_scenario(
-            &mut players,
-            dealer,
-            hand,
-            trump_candidate,
-            bid_result,
-        );
+        let hand_states = HandState::create_with_scenario(hand, trump_candidate);
         let results: Vec<i8> = hand_states
             .par_bridge()
-            .map_with(players_clone.clone(), |players, mut hand_state| loop {
+            .map_with(
+                (players.clone(), bid_result.clone()),
+                |(players, bid_result), hands| {
+                    HandState::create_hand_state(
+                        players,
+                        dealer,
+                        hands,
+                        trump_candidate,
+                        bid_result,
+                    )
+                },
+            )
+            .map_with(players.clone(), |players, mut hand_state| loop {
                 match hand_state.step(players) {
                     Some((winner, score)) => {
                         return if winner == Position::South || winner == Position::South.partner() {
