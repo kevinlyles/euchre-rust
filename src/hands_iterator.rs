@@ -54,11 +54,11 @@ impl Iterator for HandsIterator {
             j -= 1;
         }
 
-        (state[i - 1], state[j]) = (state[j], state[i - 1]);
+        state.swap(i - 1, j);
 
         j = state.len() - 1;
         while i < j {
-            (state[i], state[j]) = (state[j], state[i]);
+            state.swap(i, j);
             i += 1;
             j -= 1;
         }
