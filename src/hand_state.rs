@@ -1,6 +1,3 @@
-use std::array::IntoIter;
-
-use itertools::{Permutations, Unique};
 use rayon::{
     iter::{IterBridge, MapWith},
     prelude::{ParallelBridge, ParallelIterator},
@@ -12,7 +9,7 @@ use crate::{
     card::Card,
     deck::Deck,
     hand::Hand,
-    hands_iterator::{create, CardLocation},
+    hands_iterator::{CardLocation, HandsIterator},
     player::Player,
     position::Position,
     rank_with_bowers::RankWithBowers,
@@ -77,14 +74,14 @@ impl HandState {
         my_hand: Hand,
         trump_candidate: Card,
     ) -> MapWith<
-        IterBridge<Unique<Permutations<IntoIter<CardLocation, 18>>>>,
+        IterBridge<HandsIterator>,
         (Hand, [Card; 18]),
-        impl Fn(&mut (Hand, [Card; 18]), Vec<CardLocation>) -> [Hand; 4],
+        impl Fn(&mut (Hand, [Card; 18]), [CardLocation; 18]) -> [Hand; 4],
     > {
         let mut available_cards = Deck::create_all_cards();
         available_cards.retain(|&card| card != trump_candidate && !my_hand.cards.contains(&card));
         let available_cards = available_cards.try_into().unwrap();
-        create().par_bridge().map_with(
+        HandsIterator::create().par_bridge().map_with(
             (my_hand, available_cards),
             |(my_hand, available_cards), permutation| {
                 HandState::generate_hands(my_hand, &available_cards, permutation)
@@ -95,7 +92,7 @@ impl HandState {
     fn generate_hands(
         my_hand: &Hand,
         available_cards: &[Card; 18],
-        permutation: Vec<CardLocation>,
+        permutation: [CardLocation; 18],
     ) -> [Hand; 4] {
         let mut hands = [
             Hand {
