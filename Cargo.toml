@@ -10,6 +10,7 @@ rand = "~0.8.5"
 enum-iterator = "~0.8"
 log = "0.4.17"
 itertools = "0.10.5"
+rayon = "1.6.1"
 
 [dev-dependencies]
 test-case = "2.2.2"

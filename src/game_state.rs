@@ -1,7 +1,4 @@
-use crate::{
-    bid_result::BidResultCalled, card::Card, deck::Deck, hand::Hand, hand_state::HandState,
-    player::Player, position::Position,
-};
+use crate::{deck::Deck, hand_state::HandState, player::Player, position::Position};
 
 pub struct GameState<T: Player> {
     pub players: [T; 4],

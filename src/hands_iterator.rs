@@ -37,7 +37,7 @@ impl HandsIterator {
                 CardLocation::Kitty,
             ]
             .into_iter()
-            .permutations(15)
+            .permutations(18)
             .unique(),
         }
     }
@@ -53,13 +53,13 @@ impl Iterator for HandsIterator {
             permutation: Vec<CardLocation>,
         ) -> [Hand; 4] {
             let mut hands = [
+                Hand {
+                    cards: Vec::with_capacity(6),
+                },
+                Hand {
+                    cards: Vec::with_capacity(6),
+                },
                 my_hand.clone(),
-                Hand {
-                    cards: Vec::with_capacity(6),
-                },
-                Hand {
-                    cards: Vec::with_capacity(6),
-                },
                 Hand {
                     cards: Vec::with_capacity(6),
                 },
@@ -92,15 +92,4 @@ enum CardLocation {
     NorthHand,
     EastHand,
     Kitty,
-}
-
-impl CardLocation {
-    pub fn next(&self) -> CardLocation {
-        match self {
-            Self::WestHand => Self::NorthHand,
-            Self::NorthHand => Self::EastHand,
-            Self::EastHand => Self::Kitty,
-            Self::Kitty => Self::WestHand,
-        }
-    }
 }

@@ -1,5 +1,6 @@
 use crate::{player::Player, position::Position, rank_with_bowers::RankWithBowers};
 
+#[derive(Clone)]
 pub struct BasicPlayer {
     pub position: Position,
 }

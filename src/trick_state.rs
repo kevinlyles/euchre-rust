@@ -3,17 +3,19 @@ use crate::{
     suit::Suit,
 };
 
+#[derive(Debug)]
 pub struct TrickState {
     pub bid_result: BidResultCalled,
     pub leader: Position,
     pub phase: TrickPhase,
 }
 
+#[derive(Debug)]
 pub enum TrickPhase {
-    BeforeFirstTrick,
-    BeforeSecondTrick { cards_played: [Card; 1] },
-    BeforeThirdTrick { cards_played: [Card; 2] },
-    BeforeFourthTrick { cards_played: [Card; 3] },
+    BeforeFirstCard,
+    BeforeSecondCard { cards_played: [Card; 1] },
+    BeforeThirdCard { cards_played: [Card; 2] },
+    BeforeFourthCard { cards_played: [Card; 3] },
     Done { trick_winner: Position },
 }
 
@@ -22,7 +24,7 @@ impl TrickState {
         TrickState {
             bid_result,
             leader,
-            phase: TrickPhase::BeforeFirstTrick,
+            phase: TrickPhase::BeforeFirstCard,
         }
     }
 
@@ -32,7 +34,7 @@ impl TrickState {
         hands: &mut [Hand; 4],
     ) -> Option<Position> {
         match self.phase {
-            TrickPhase::BeforeFirstTrick => {
+            TrickPhase::BeforeFirstCard => {
                 let player = self.leader;
                 let hand = &mut hands[player.index()];
                 let mut card =
@@ -41,22 +43,22 @@ impl TrickState {
                     card = hand.cards[0];
                 }
                 hand.cards.retain(|c| c != &card);
-                self.phase = TrickPhase::BeforeSecondTrick {
+                self.phase = TrickPhase::BeforeSecondCard {
                     cards_played: [card],
                 };
                 None
             }
-            TrickPhase::BeforeSecondTrick { cards_played } => {
+            TrickPhase::BeforeSecondCard { cards_played } => {
                 let player = &self.leader.next_position_playing(&self.bid_result);
                 let trump = &self.bid_result.trump();
                 let suit_led = &cards_played[0].suit;
                 let card = TrickState::play_card(player, players, hands, trump, suit_led);
-                self.phase = TrickPhase::BeforeThirdTrick {
+                self.phase = TrickPhase::BeforeThirdCard {
                     cards_played: [cards_played[0], card],
                 };
                 None
             }
-            TrickPhase::BeforeThirdTrick { cards_played } => {
+            TrickPhase::BeforeThirdCard { cards_played } => {
                 let player = &self
                     .leader
                     .next_position_playing(&self.bid_result)
@@ -73,13 +75,13 @@ impl TrickState {
                     let trump = &self.bid_result.trump();
                     let suit_led = &cards_played[0].suit;
                     let card = TrickState::play_card(player, players, hands, trump, suit_led);
-                    self.phase = TrickPhase::BeforeFourthTrick {
+                    self.phase = TrickPhase::BeforeFourthCard {
                         cards_played: [cards_played[0], cards_played[1], card],
                     }
                 }
                 None
             }
-            TrickPhase::BeforeFourthTrick { cards_played } => {
+            TrickPhase::BeforeFourthCard { cards_played } => {
                 let player = &self
                     .leader
                     .next_position_playing(&self.bid_result)

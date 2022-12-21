@@ -11,12 +11,14 @@ use crate::{
     trick_state::TrickState,
 };
 
+#[derive(Debug)]
 pub struct HandState {
     pub dealer: Position,
     hands: [Hand; 4],
     pub phase: HandPhase,
 }
 
+#[derive(Debug)]
 pub enum HandPhase {
     Bidding {
         bid_state: BidState,
