@@ -1,9 +1,18 @@
+use std::array::IntoIter;
+
+use itertools::{Permutations, Unique};
+use rayon::{
+    iter::{IterBridge, MapWith},
+    prelude::{ParallelBridge, ParallelIterator},
+};
+
 use crate::{
     bid_result::{BidResultAll, BidResultCalled},
     bid_state::BidState,
     card::Card,
+    deck::Deck,
     hand::Hand,
-    hands_iterator::HandsIterator,
+    hands_iterator::{create, CardLocation},
     player::Player,
     position::Position,
     rank_with_bowers::RankWithBowers,
@@ -67,8 +76,48 @@ impl HandState {
     pub fn create_with_scenario(
         my_hand: Hand,
         trump_candidate: Card,
-    ) -> impl Iterator<Item = [Hand; 4]> {
-        HandsIterator::create(my_hand, trump_candidate)
+    ) -> MapWith<
+        IterBridge<Unique<Permutations<IntoIter<CardLocation, 18>>>>,
+        (Hand, [Card; 18]),
+        impl Fn(&mut (Hand, [Card; 18]), Vec<CardLocation>) -> [Hand; 4],
+    > {
+        let mut available_cards = Deck::create_all_cards();
+        available_cards.retain(|&card| card != trump_candidate && !my_hand.cards.contains(&card));
+        let available_cards = available_cards.try_into().unwrap();
+        create().par_bridge().map_with(
+            (my_hand, available_cards),
+            |(my_hand, available_cards), permutation| {
+                HandState::generate_hands(my_hand, &available_cards, permutation)
+            },
+        )
+    }
+
+    fn generate_hands(
+        my_hand: &Hand,
+        available_cards: &[Card; 18],
+        permutation: Vec<CardLocation>,
+    ) -> [Hand; 4] {
+        let mut hands = [
+            Hand {
+                cards: Vec::with_capacity(6),
+            },
+            Hand {
+                cards: Vec::with_capacity(6),
+            },
+            my_hand.clone(),
+            Hand {
+                cards: Vec::with_capacity(6),
+            },
+        ];
+        for (&location, &card) in permutation.iter().zip(available_cards) {
+            match location {
+                CardLocation::WestHand => hands[Position::West.index()].cards.push(card),
+                CardLocation::NorthHand => hands[Position::North.index()].cards.push(card),
+                CardLocation::EastHand => hands[Position::East.index()].cards.push(card),
+                CardLocation::Kitty => (),
+            }
+        }
+        hands
     }
 
     pub fn create_hand_state(

@@ -7,7 +7,7 @@ use log::LevelFilter;
 use logger::Logger;
 use players::basic::BasicPlayer;
 use position::Position;
-use rayon::prelude::{ParallelBridge, ParallelIterator};
+use rayon::prelude::ParallelIterator;
 use std::{collections::HashMap, env};
 use suit::Suit;
 
@@ -53,7 +53,6 @@ fn main() {
         let (hand, trump_candidate, dealer, bid_result) = process_args(args);
         let hand_states = HandState::create_with_scenario(hand, trump_candidate);
         let (total_count, result_counts) = hand_states
-            .par_bridge()
             .map_with(
                 (players.clone(), bid_result.clone()),
                 |(players, bid_result), hands| {
