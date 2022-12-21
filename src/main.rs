@@ -52,7 +52,7 @@ fn main() {
     if args.contains(&"--simulate-hand".to_owned()) {
         let (hand, trump_candidate, dealer, bid_result) = process_args(args);
         let hand_states = HandState::create_with_scenario(hand, trump_candidate);
-        let results: Vec<i8> = hand_states
+        let (total_count, result_counts) = hand_states
             .par_bridge()
             .map_with(
                 (players.clone(), bid_result.clone()),
@@ -78,20 +78,38 @@ fn main() {
                     None => (),
                 }
             })
-            .collect();
-        let mut total_count: u64 = 0;
-        let mut result_counts = HashMap::<i8, u64>::new();
-        for score in results {
-            total_count += 1;
-            match result_counts.get_mut(&score) {
-                Some(count) => {
-                    *count += 1;
-                }
-                None => {
-                    result_counts.insert(score, 1);
-                }
-            };
-        }
+            .fold(
+                || (0, HashMap::<i8, u64>::new()),
+                |(count, result_counts), score| {
+                    let mut new_result_counts = result_counts.clone();
+                    match new_result_counts.get_mut(&score) {
+                        Some(score_count) => {
+                            *score_count += 1;
+                        }
+                        None => {
+                            new_result_counts.insert(score, 1);
+                        }
+                    };
+                    (count + 1, new_result_counts)
+                },
+            )
+            .reduce(
+                || (0, HashMap::<i8, u64>::new()),
+                |(count_1, result_counts_1), (count_2, result_counts_2)| {
+                    let mut new_result_counts = result_counts_1.clone();
+                    for (score, count) in result_counts_2.iter() {
+                        match new_result_counts.get_mut(score) {
+                            Some(score_count) => {
+                                *score_count += count;
+                            }
+                            None => {
+                                new_result_counts.insert(*score, *count);
+                            }
+                        }
+                    }
+                    (count_1 + count_2, new_result_counts)
+                },
+            );
         let mut scores: Vec<&i8> = result_counts.keys().collect();
         scores.sort();
         let mut expected_value: i64 = 0;
