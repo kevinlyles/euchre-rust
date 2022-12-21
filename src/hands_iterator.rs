@@ -36,6 +36,7 @@ impl Iterator for HandsIterator {
         if let None = self.state {
             return None;
         }
+
         let mut state = self.state.unwrap();
         let result = state.clone();
 
