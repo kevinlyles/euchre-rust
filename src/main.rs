@@ -5,6 +5,7 @@ use hand::Hand;
 use hand_state::HandState;
 use log::LevelFilter;
 use logger::Logger;
+use num_format::{Locale, ToFormattedString};
 use players::basic::BasicPlayer;
 use position::Position;
 use rayon::prelude::ParallelIterator;
@@ -262,7 +263,7 @@ fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
     println!(
         "{} {} times ({:.2}%)",
         description,
-        count,
+        count.to_formatted_string(&Locale::en),
         (*count as f64) / (*total_count as f64) * 100f64
     )
 }
