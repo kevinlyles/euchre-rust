@@ -6,21 +6,21 @@ impl HandsIterator {
     pub fn create() -> HandsIterator {
         HandsIterator {
             state: Some([
-                CardLocation::WestHand,
-                CardLocation::WestHand,
-                CardLocation::WestHand,
-                CardLocation::WestHand,
-                CardLocation::WestHand,
-                CardLocation::NorthHand,
-                CardLocation::NorthHand,
-                CardLocation::NorthHand,
-                CardLocation::NorthHand,
-                CardLocation::NorthHand,
-                CardLocation::EastHand,
-                CardLocation::EastHand,
-                CardLocation::EastHand,
-                CardLocation::EastHand,
-                CardLocation::EastHand,
+                CardLocation::West,
+                CardLocation::West,
+                CardLocation::West,
+                CardLocation::West,
+                CardLocation::West,
+                CardLocation::North,
+                CardLocation::North,
+                CardLocation::North,
+                CardLocation::North,
+                CardLocation::North,
+                CardLocation::East,
+                CardLocation::East,
+                CardLocation::East,
+                CardLocation::East,
+                CardLocation::East,
                 CardLocation::Kitty,
                 CardLocation::Kitty,
                 CardLocation::Kitty,
@@ -50,7 +50,7 @@ impl Iterator for HandsIterator {
             return Some(result);
         }
 
-        while state[j] <= state[j - 1] {
+        while state[j] <= state[i - 1] {
             j -= 1;
         }
 
@@ -63,14 +63,16 @@ impl Iterator for HandsIterator {
             j -= 1;
         }
 
+        self.state = Some(state);
+
         Some(result)
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum CardLocation {
-    WestHand,
-    NorthHand,
-    EastHand,
+    West,
+    North,
+    East,
     Kitty,
 }

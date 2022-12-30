@@ -263,6 +263,6 @@ fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
         "{} {} times ({:.2}%)",
         description,
         count,
-        (*count as f64) / (*total_count as f64)
+        (*count as f64) / (*total_count as f64) * 100f64
     )
 }

@@ -108,9 +108,9 @@ impl HandState {
         ];
         for (&location, &card) in permutation.iter().zip(available_cards) {
             match location {
-                CardLocation::WestHand => hands[Position::West.index()].cards.push(card),
-                CardLocation::NorthHand => hands[Position::North.index()].cards.push(card),
-                CardLocation::EastHand => hands[Position::East.index()].cards.push(card),
+                CardLocation::West => hands[Position::West.index()].cards.push(card),
+                CardLocation::North => hands[Position::North.index()].cards.push(card),
+                CardLocation::East => hands[Position::East.index()].cards.push(card),
                 CardLocation::Kitty => (),
             }
         }
