@@ -244,12 +244,12 @@ fn process_args(args: Vec<String>) -> (Hand, Card, Position, BidResultCalled) {
         }
     } else if let Some(suit) = call_suit {
         if go_alone {
-            BidResultCalled::Called {
+            BidResultCalled::CalledAlone {
                 trump: suit,
                 caller: Position::South,
             }
         } else {
-            BidResultCalled::CalledAlone {
+            BidResultCalled::Called {
                 trump: suit,
                 caller: Position::South,
             }
