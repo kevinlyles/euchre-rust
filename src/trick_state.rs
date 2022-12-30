@@ -168,6 +168,10 @@ impl TrickState {
                 _ => player = player.next_position_playing(bid_result),
             }
         }
+        if player != Position::South {
+            log::info!("Someone else took a trick: {:?}", player);
+            log::info!("Cards: {:?}, leader: {:?}", cards_played, leader);
+        }
         player
     }
 }

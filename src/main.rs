@@ -52,7 +52,8 @@ fn main() {
     ];
     if args.contains(&"--simulate-hand".to_owned()) {
         let (hand, trump_candidate, dealer, bid_result) = process_args(args);
-        let hand_states = HandState::create_with_scenario(hand, trump_candidate);
+        let hand_states =
+            HandState::create_with_scenario(hand, trump_candidate, &bid_result.trump());
         let (total_count, result_counts) = hand_states
             .map_with(
                 (players.clone(), bid_result.clone()),

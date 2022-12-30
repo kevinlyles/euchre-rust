@@ -12,7 +12,6 @@ use crate::{
     hands_iterator::{CardLocation, HandsIterator},
     player::Player,
     position::Position,
-    rank_with_bowers::RankWithBowers,
     suit::Suit,
     trick_state::TrickState,
 };
@@ -73,13 +72,17 @@ impl HandState {
     pub fn create_with_scenario(
         my_hand: Hand,
         trump_candidate: Card,
+        trump: &Suit,
     ) -> MapWith<
         IterBridge<HandsIterator>,
         (Hand, [Card; 18]),
         impl Fn(&mut (Hand, [Card; 18]), [CardLocation; 18]) -> [Hand; 4],
     > {
+        let mut my_hand = my_hand.clone();
         let mut available_cards = Deck::create_all_cards();
         available_cards.retain(|&card| card != trump_candidate && !my_hand.cards.contains(&card));
+        Hand::update_bowers(&mut my_hand, trump);
+        Card::update_bowers(&mut available_cards, trump);
         let available_cards = available_cards.try_into().unwrap();
         HandsIterator::create().par_bridge().map_with(
             (my_hand, available_cards),
@@ -281,22 +284,7 @@ impl HandState {
 
     fn update_bowers(hands: &mut [Hand; 4], trump: &Suit) -> () {
         for hand in hands.iter_mut() {
-            for card in hand.cards.iter_mut() {
-                if card.rank != RankWithBowers::Jack {
-                    continue;
-                }
-                if card.suit == *trump {
-                    *card = Card {
-                        rank: RankWithBowers::RightBower,
-                        suit: *trump,
-                    };
-                } else if card.suit.other_suit_of_same_color() == *trump {
-                    *card = Card {
-                        rank: RankWithBowers::LeftBower,
-                        suit: *trump,
-                    };
-                }
-            }
+            Hand::update_bowers(hand, trump);
         }
     }
 

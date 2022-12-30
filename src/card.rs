@@ -38,6 +38,25 @@ impl Card {
             None => None,
         }
     }
+
+    pub fn update_bowers(cards: &mut Vec<Card>, trump: &Suit) -> () {
+        for card in cards.iter_mut() {
+            if card.rank != RankWithBowers::Jack {
+                continue;
+            }
+            if card.suit == *trump {
+                *card = Card {
+                    rank: RankWithBowers::RightBower,
+                    suit: *trump,
+                };
+            } else if card.suit.other_suit_of_same_color() == *trump {
+                *card = Card {
+                    rank: RankWithBowers::LeftBower,
+                    suit: *trump,
+                };
+            }
+        }
+    }
 }
 
 #[cfg(test)]
