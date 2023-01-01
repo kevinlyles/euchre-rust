@@ -163,7 +163,7 @@ fn main() {
             }
         }
         println!(
-            "Expected value when you're able to bid: {}",
+            "Expected value when you're able to bid: {:.2}",
             (expected_value as f64) / (total_bid_count as f64)
         )
     } else {
