@@ -120,6 +120,7 @@ fn main() {
         let mut results: Vec<&HandResult> = result_counts.keys().collect();
         results.sort();
         let mut expected_value: i64 = 0;
+        let mut total_bid_count: u64 = 0;
         println!("Results:");
         for result in results {
             let count = result_counts.get(&result).unwrap();
@@ -128,6 +129,7 @@ fn main() {
                     print_score_line("You didn't get to bid", count, &total_count);
                 }
                 HandResult::ExpectedBidResult { score } => {
+                    total_bid_count += count;
                     match score {
                         -4 => {
                             print_score_line(
@@ -162,7 +164,7 @@ fn main() {
         }
         println!(
             "Expected value when you're able to bid: {}",
-            (expected_value as f64) / (total_count as f64)
+            (expected_value as f64) / (total_bid_count as f64)
         )
     } else {
         log::set_logger(&LOGGER)
