@@ -70,24 +70,26 @@ impl HandState {
     }
 
     pub fn create_with_scenario(
-        my_hand: Hand,
+        dealer: Position,
         trump_candidate: Card,
-        trump: &Suit,
+        my_hand: Hand,
     ) -> MapWith<
         IterBridge<HandsIterator>,
-        (Hand, [Card; 18]),
-        impl Fn(&mut (Hand, [Card; 18]), [CardLocation; 18]) -> [Hand; 4],
+        (Position, Card, Hand, [Card; 18]),
+        impl Fn(&mut (Position, Card, Hand, [Card; 18]), [CardLocation; 18]) -> HandState,
     > {
-        let mut my_hand = my_hand.clone();
+        let my_hand = my_hand.clone();
         let mut available_cards = Deck::create_all_cards();
         available_cards.retain(|&card| card != trump_candidate && !my_hand.cards.contains(&card));
-        Hand::update_bowers(&mut my_hand, trump);
-        Card::update_bowers(&mut available_cards, trump);
         let available_cards = available_cards.try_into().unwrap();
         HandsIterator::create().par_bridge().map_with(
-            (my_hand, available_cards),
-            |(my_hand, available_cards), permutation| {
-                HandState::generate_hands(my_hand, &available_cards, permutation)
+            (dealer, trump_candidate, my_hand, available_cards),
+            |(dealer, trump_candidate, my_hand, available_cards), permutation| {
+                HandState::create(
+                    *dealer,
+                    *trump_candidate,
+                    HandState::generate_hands(my_hand, &available_cards, permutation),
+                )
             },
         )
     }
@@ -118,43 +120,6 @@ impl HandState {
             }
         }
         hands
-    }
-
-    pub fn create_hand_state(
-        players: &mut [impl Player; 4],
-        dealer: Position,
-        hands: [Hand; 4],
-        trump_candidate: Card,
-        bid_result: &BidResultCalled,
-    ) -> HandState {
-        match bid_result {
-            BidResultCalled::Called { trump, .. }
-            | BidResultCalled::CalledAlone { trump, .. }
-            | BidResultCalled::DefendedAlone { trump, .. } => {
-                let mut hands = hands;
-                if *trump == trump_candidate.suit {
-                    let hand = &mut hands[dealer.index()];
-                    hand.cards.push(trump_candidate);
-                    let mut discard =
-                        players[dealer.index()].choose_discard(&hand, &trump_candidate.suit);
-                    if !hand.cards.contains(&discard) {
-                        discard = hand.cards[0];
-                    }
-                    hand.cards.retain(|&card| card != discard);
-                }
-                HandState {
-                    dealer,
-                    hands,
-                    phase: HandPhase::FirstTrick {
-                        bid_result: bid_result.clone(),
-                        trick_state: TrickState::create(
-                            bid_result.clone(),
-                            dealer.next_position_playing(&bid_result),
-                        ),
-                    },
-                }
-            }
-        }
     }
 
     pub fn step(&mut self, players: &mut [impl Player; 4]) -> Option<(Position, u8)> {
@@ -279,6 +244,26 @@ impl HandState {
                 bid_result,
                 tricks_taken,
             } => Some(HandState::get_score(&bid_result, &tricks_taken)),
+        }
+    }
+
+    pub fn finish_bidding(&mut self, players: &mut [impl Player; 4]) -> Option<BidResultCalled> {
+        loop {
+            match &self.phase {
+                HandPhase::Bidding { .. } => {
+                    self.step(players);
+                }
+                HandPhase::FirstTrick { bid_result, .. }
+                | HandPhase::SecondTrick { bid_result, .. }
+                | HandPhase::ThirdTrick { bid_result, .. }
+                | HandPhase::FourthTrick { bid_result, .. }
+                | HandPhase::FifthTrick { bid_result, .. } => {
+                    return Some(bid_result.clone());
+                }
+                HandPhase::Scoring { .. } => {
+                    return None;
+                }
+            }
         }
     }
 

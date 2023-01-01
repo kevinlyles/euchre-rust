@@ -6,7 +6,7 @@ use hand_state::HandState;
 use log::LevelFilter;
 use logger::Logger;
 use num_format::{Locale, ToFormattedString};
-use players::basic::BasicPlayer;
+use players::{basic::BasicPlayer, preprogrammed_bidder::PreprogrammedBidder, wrapper::Wrapper};
 use position::Position;
 use rayon::prelude::ParallelIterator;
 use std::{collections::HashMap, env};
@@ -31,123 +31,157 @@ mod trick_state;
 
 static LOGGER: Logger = Logger;
 
+#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum HandResult {
+    DifferentBidResult,
+    ExpectedBidResult { score: i8 },
+}
+
 fn main() {
-    log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(LevelFilter::Info))
-        .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
     let args: Vec<String> = env::args().collect();
-    let players = [
-        BasicPlayer {
-            position: Position::North,
-        },
-        BasicPlayer {
-            position: Position::East,
-        },
-        BasicPlayer {
-            position: Position::South,
-        },
-        BasicPlayer {
-            position: Position::West,
-        },
-    ];
     if args.contains(&"--simulate-hand".to_owned()) {
-        let (hand, trump_candidate, dealer, bid_result) = process_args(args);
-        let hand_states =
-            HandState::create_with_scenario(hand, trump_candidate, &bid_result.trump());
+        let (hand, trump_candidate, dealer, bidder, expected_bid_result) = process_args(args);
+        let hand_states = HandState::create_with_scenario(dealer, trump_candidate, hand);
         let (total_count, result_counts) = hand_states
             .map_with(
-                (players.clone(), bid_result.clone()),
-                |(players, bid_result), hands| {
-                    HandState::create_hand_state(
-                        players,
-                        dealer,
-                        hands,
-                        trump_candidate,
-                        bid_result,
-                    )
-                },
-            )
-            .map_with(players.clone(), |players, mut hand_state| loop {
-                match hand_state.step(players) {
-                    Some((winner, score)) => {
-                        return if winner == Position::South || winner == Position::South.partner() {
-                            score as i8
-                        } else {
-                            -(score as i8)
+                (bidder, expected_bid_result),
+                |(bidder, expected_bid_result), mut hand_state| {
+                    let mut players = [
+                        Wrapper::create_single_player(Box::new(BasicPlayer {
+                            position: Position::North,
+                        })),
+                        Wrapper::create_single_player(Box::new(BasicPlayer {
+                            position: Position::East,
+                        })),
+                        Wrapper::create_separate_bidder(
+                            Box::new(bidder.clone()),
+                            Box::new(BasicPlayer {
+                                position: Position::South,
+                            }),
+                        ),
+                        Wrapper::create_single_player(Box::new(BasicPlayer {
+                            position: Position::West,
+                        })),
+                    ];
+                    match hand_state.finish_bidding(&mut players) {
+                        Some(bid_result) if bid_result == *expected_bid_result => (),
+                        _ => return HandResult::DifferentBidResult,
+                    };
+                    loop {
+                        match hand_state.step(&mut players) {
+                            Some((winner, score)) => {
+                                return if winner == Position::South
+                                    || winner == Position::South.partner()
+                                {
+                                    HandResult::ExpectedBidResult { score: score as i8 }
+                                } else {
+                                    HandResult::ExpectedBidResult {
+                                        score: -(score as i8),
+                                    }
+                                }
+                            }
+                            None => (),
                         }
                     }
-                    None => (),
-                }
-            })
+                },
+            )
             .fold(
-                || (0, HashMap::<i8, u64>::new()),
-                |(count, result_counts), score| {
+                || (0, HashMap::<HandResult, u64>::new()),
+                |(count, result_counts), hand_result| {
                     let mut new_result_counts = result_counts.clone();
-                    match new_result_counts.get_mut(&score) {
-                        Some(score_count) => {
-                            *score_count += 1;
+                    match new_result_counts.get_mut(&hand_result) {
+                        Some(result_count) => {
+                            *result_count += 1;
                         }
                         None => {
-                            new_result_counts.insert(score, 1);
+                            new_result_counts.insert(hand_result, 1);
                         }
                     };
                     (count + 1, new_result_counts)
                 },
             )
             .reduce(
-                || (0, HashMap::<i8, u64>::new()),
+                || (0, HashMap::<HandResult, u64>::new()),
                 |(count_1, result_counts_1), (count_2, result_counts_2)| {
                     let mut new_result_counts = result_counts_1.clone();
-                    for (score, count) in result_counts_2.iter() {
-                        match new_result_counts.get_mut(score) {
+                    for (result, count) in result_counts_2.iter() {
+                        match new_result_counts.get_mut(result) {
                             Some(score_count) => {
                                 *score_count += count;
                             }
                             None => {
-                                new_result_counts.insert(*score, *count);
+                                new_result_counts.insert(result.clone(), *count);
                             }
                         }
                     }
                     (count_1 + count_2, new_result_counts)
                 },
             );
-        let mut scores: Vec<&i8> = result_counts.keys().collect();
-        scores.sort();
+        let mut results: Vec<&HandResult> = result_counts.keys().collect();
+        results.sort();
         let mut expected_value: i64 = 0;
         println!("Results:");
-        for &score in scores {
-            let count = result_counts.get(&score).unwrap();
-            match score {
-                -4 => {
-                    print_score_line("Opponent successfully defended alone", count, &total_count);
+        for result in results {
+            let count = result_counts.get(&result).unwrap();
+            match result {
+                HandResult::DifferentBidResult => {
+                    print_score_line("You didn't get to bid", count, &total_count);
                 }
-                -2 => {
-                    print_score_line("Opponent euchred you", count, &total_count);
-                }
-                1 => {
-                    print_score_line("You made it", count, &total_count);
-                }
-                2 => {
-                    print_score_line("You took all 5 tricks", count, &total_count);
-                }
-                4 => {
-                    print_score_line("You made it alone", count, &total_count);
-                }
-                score => {
-                    print_score_line(
-                        format!("Unexpected score {}", score).as_str(),
-                        count,
-                        &total_count,
-                    );
+                HandResult::ExpectedBidResult { score } => {
+                    match score {
+                        -4 => {
+                            print_score_line(
+                                "Opponent successfully defended alone",
+                                count,
+                                &total_count,
+                            );
+                        }
+                        -2 => {
+                            print_score_line("Opponent euchred you", count, &total_count);
+                        }
+                        1 => {
+                            print_score_line("You made it", count, &total_count);
+                        }
+                        2 => {
+                            print_score_line("You took all 5 tricks", count, &total_count);
+                        }
+                        4 => {
+                            print_score_line("You made it alone", count, &total_count);
+                        }
+                        score => {
+                            print_score_line(
+                                format!("Unexpected score {}", score).as_str(),
+                                count,
+                                &total_count,
+                            );
+                        }
+                    };
+                    expected_value += (*score as i64) * (*count as i64);
                 }
             }
-            expected_value += (score as i64) * (*count as i64);
         }
         println!(
-            "Expected value: {}",
+            "Expected value when you're able to bid: {}",
             (expected_value as f64) / (total_count as f64)
         )
     } else {
+        log::set_logger(&LOGGER)
+            .map(|()| log::set_max_level(LevelFilter::Info))
+            .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
+        let players = [
+            BasicPlayer {
+                position: Position::North,
+            },
+            BasicPlayer {
+                position: Position::East,
+            },
+            BasicPlayer {
+                position: Position::South,
+            },
+            BasicPlayer {
+                position: Position::West,
+            },
+        ];
         let mut game_state = GameState::create(players);
         loop {
             match game_state.step() {
@@ -161,7 +195,7 @@ fn main() {
     }
 }
 
-fn process_args(args: Vec<String>) -> (Hand, Card, Position, BidResultCalled) {
+fn process_args(args: Vec<String>) -> (Hand, Card, Position, PreprogrammedBidder, BidResultCalled) {
     let simulate_args: Vec<String> = args
         .into_iter()
         .skip_while(|arg| arg != "--simulate-hand")
@@ -229,35 +263,47 @@ fn process_args(args: Vec<String>) -> (Hand, Card, Position, BidResultCalled) {
                 hand.cards.len()
             );
     }
-    let bid_result = if order_up {
-        //TODO: handle defending alone?
+    //TODO: handle defending alone by running the bidding process as well
+    let (bidder, bid_result) = if order_up {
         if go_alone {
-            BidResultCalled::CalledAlone {
-                trump: trump_candidate.suit,
-                caller: Position::South,
-            }
+            (
+                PreprogrammedBidder::orders_up_alone(),
+                BidResultCalled::CalledAlone {
+                    trump: trump_candidate.suit,
+                    caller: Position::South,
+                },
+            )
         } else {
-            BidResultCalled::Called {
-                trump: trump_candidate.suit,
-                caller: Position::South,
-            }
+            (
+                PreprogrammedBidder::orders_up(),
+                BidResultCalled::Called {
+                    trump: trump_candidate.suit,
+                    caller: Position::South,
+                },
+            )
         }
-    } else if let Some(suit) = call_suit {
+    } else if let Some(trump) = call_suit {
         if go_alone {
-            BidResultCalled::CalledAlone {
-                trump: suit,
-                caller: Position::South,
-            }
+            (
+                PreprogrammedBidder::calls_alone(trump),
+                BidResultCalled::CalledAlone {
+                    trump,
+                    caller: Position::South,
+                },
+            )
         } else {
-            BidResultCalled::Called {
-                trump: suit,
-                caller: Position::South,
-            }
+            (
+                PreprogrammedBidder::calls(trump),
+                BidResultCalled::Called {
+                    trump,
+                    caller: Position::South,
+                },
+            )
         }
     } else {
         panic!("You must either order the trump candidate up (--order-up) or call a trump suit (--call-suit {{C|D|H|S}}");
     };
-    (hand, trump_candidate, dealer, bid_result)
+    (hand, trump_candidate, dealer, bidder, bid_result)
 }
 
 fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {

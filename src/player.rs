@@ -1,6 +1,9 @@
+use dyn_clonable::clonable;
+
 use crate::{card::Card, hand::Hand, position::Position, suit::Suit};
 
-pub trait Player {
+#[clonable]
+pub trait Player: Clone {
     fn should_order_up(
         &mut self,
         _hand: &Hand,
