@@ -22,7 +22,7 @@ impl<'a> Wrapper<'a> {
     }
 }
 
-impl<'a> Player for Wrapper<'a> {
+impl Player for Wrapper<'_> {
     fn should_order_up(
         &mut self,
         hand: &crate::hand::Hand,
@@ -88,7 +88,7 @@ impl<'a> Player for Wrapper<'a> {
         hand: &crate::hand::Hand,
         trump: &crate::suit::Suit,
     ) -> crate::card::Card {
-        self.bidder.choose_discard(hand, trump)
+        self.player.choose_discard(hand, trump)
     }
 
     fn play_card(

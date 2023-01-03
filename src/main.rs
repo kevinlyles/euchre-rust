@@ -1,3 +1,5 @@
+#![warn(single_use_lifetimes)]
+
 use bid_result::BidResultCalled;
 use card::Card;
 use game_state::GameState;
@@ -40,28 +42,56 @@ enum HandResult {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.contains(&"--simulate-hand".to_owned()) {
-        let (hand, trump_candidate, dealer, bidder, expected_bid_result) = process_args(args);
+        let (hand, trump_candidate, dealer, bidder, expected_bid_result, ignore_other_bids) =
+            process_args(args);
         let hand_states = HandState::create_with_scenario(dealer, trump_candidate, hand);
         let (total_count, result_counts) = hand_states
             .map_with(
                 (bidder, expected_bid_result),
                 |(bidder, expected_bid_result), mut hand_state| {
                     let mut players = [
-                        Wrapper::create_single_player(Box::new(BasicPlayer {
-                            position: Position::North,
-                        })),
-                        Wrapper::create_single_player(Box::new(BasicPlayer {
-                            position: Position::East,
-                        })),
+                        if ignore_other_bids {
+                            Wrapper::create_separate_bidder(
+                                Box::new(PreprogrammedBidder::does_nothing()),
+                                Box::new(BasicPlayer {
+                                    position: Position::North,
+                                }),
+                            )
+                        } else {
+                            Wrapper::create_single_player(Box::new(BasicPlayer {
+                                position: Position::North,
+                            }))
+                        },
+                        if ignore_other_bids {
+                            Wrapper::create_separate_bidder(
+                                Box::new(PreprogrammedBidder::does_nothing()),
+                                Box::new(BasicPlayer {
+                                    position: Position::East,
+                                }),
+                            )
+                        } else {
+                            Wrapper::create_single_player(Box::new(BasicPlayer {
+                                position: Position::East,
+                            }))
+                        },
                         Wrapper::create_separate_bidder(
                             Box::new(bidder.clone()),
                             Box::new(BasicPlayer {
                                 position: Position::South,
                             }),
                         ),
-                        Wrapper::create_single_player(Box::new(BasicPlayer {
-                            position: Position::West,
-                        })),
+                        if ignore_other_bids {
+                            Wrapper::create_separate_bidder(
+                                Box::new(PreprogrammedBidder::does_nothing()),
+                                Box::new(BasicPlayer {
+                                    position: Position::West,
+                                }),
+                            )
+                        } else {
+                            Wrapper::create_single_player(Box::new(BasicPlayer {
+                                position: Position::West,
+                            }))
+                        },
                     ];
                     match hand_state.finish_bidding(&mut players) {
                         Some(bid_result) if bid_result == *expected_bid_result => (),
@@ -197,7 +227,16 @@ fn main() {
     }
 }
 
-fn process_args(args: Vec<String>) -> (Hand, Card, Position, PreprogrammedBidder, BidResultCalled) {
+fn process_args(
+    args: Vec<String>,
+) -> (
+    Hand,
+    Card,
+    Position,
+    PreprogrammedBidder,
+    BidResultCalled,
+    bool,
+) {
     let simulate_args: Vec<String> = args
         .into_iter()
         .skip_while(|arg| arg != "--simulate-hand")
@@ -209,6 +248,7 @@ fn process_args(args: Vec<String>) -> (Hand, Card, Position, PreprogrammedBidder
     let mut order_up = false;
     let mut call_suit = None;
     let mut go_alone = false;
+    let mut ignore_other_bids = false;
     let mut i = 0;
     while i < simulate_args.len() {
         match simulate_args[i].as_str() {
@@ -244,6 +284,7 @@ fn process_args(args: Vec<String>) -> (Hand, Card, Position, PreprogrammedBidder
                 i += 1;
             }
             "--go-alone" if go_alone == false => go_alone = true,
+            "--ignore-other-bids" => ignore_other_bids = true,
             card => match Card::try_create(card) {
                 Some(card) => hand.cards.push(card),
                 None => panic!("Invalid card: {}", card),
@@ -305,7 +346,14 @@ fn process_args(args: Vec<String>) -> (Hand, Card, Position, PreprogrammedBidder
     } else {
         panic!("You must either order the trump candidate up (--order-up) or call a trump suit (--call-suit {{C|D|H|S}}");
     };
-    (hand, trump_candidate, dealer, bidder, bid_result)
+    (
+        hand,
+        trump_candidate,
+        dealer,
+        bidder,
+        bid_result,
+        ignore_other_bids,
+    )
 }
 
 fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
