@@ -1,6 +1,6 @@
 use log::{Level, Metadata, Record};
 
-pub struct Logger;
+pub(crate) struct Logger;
 
 impl log::Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {

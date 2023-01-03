@@ -1,7 +1,7 @@
 use crate::{card::Card, hand::Hand, player::Player, position::Position, suit::Suit};
 
 #[derive(Clone)]
-pub struct PreprogrammedBidder {
+pub(crate) struct PreprogrammedBidder {
     order_up: bool,
     order_up_alone: bool,
     defend_alone: bool,
@@ -11,7 +11,7 @@ pub struct PreprogrammedBidder {
 }
 
 impl PreprogrammedBidder {
-    pub fn does_nothing() -> PreprogrammedBidder {
+    pub(crate) fn does_nothing() -> PreprogrammedBidder {
         PreprogrammedBidder {
             order_up: false,
             order_up_alone: false,
@@ -22,7 +22,7 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub fn orders_up() -> PreprogrammedBidder {
+    pub(crate) fn orders_up() -> PreprogrammedBidder {
         PreprogrammedBidder {
             order_up: true,
             order_up_alone: false,
@@ -33,7 +33,7 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub fn orders_up_alone() -> PreprogrammedBidder {
+    pub(crate) fn orders_up_alone() -> PreprogrammedBidder {
         PreprogrammedBidder {
             order_up: true,
             order_up_alone: true,
@@ -44,7 +44,8 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub fn defends_alone() -> PreprogrammedBidder {
+    pub(crate) fn defends_alone() -> PreprogrammedBidder {
+        #![allow(unused)]
         PreprogrammedBidder {
             order_up: false,
             order_up_alone: false,
@@ -55,7 +56,7 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub fn calls(trump: Suit) -> PreprogrammedBidder {
+    pub(crate) fn calls(trump: Suit) -> PreprogrammedBidder {
         PreprogrammedBidder {
             order_up: false,
             order_up_alone: false,
@@ -66,7 +67,7 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub fn calls_alone(trump: Suit) -> PreprogrammedBidder {
+    pub(crate) fn calls_alone(trump: Suit) -> PreprogrammedBidder {
         PreprogrammedBidder {
             order_up: false,
             order_up_alone: false,
@@ -77,7 +78,8 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub fn discards(card: Card) -> PreprogrammedBidder {
+    pub(crate) fn discards(card: Card) -> PreprogrammedBidder {
+        #![allow(unused)]
         PreprogrammedBidder {
             order_up: false,
             order_up_alone: false,

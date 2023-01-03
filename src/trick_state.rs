@@ -4,14 +4,14 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct TrickState {
-    pub bid_result: BidResultCalled,
-    pub leader: Position,
-    pub phase: TrickPhase,
+pub(crate) struct TrickState {
+    pub(crate) bid_result: BidResultCalled,
+    pub(crate) leader: Position,
+    pub(crate) phase: TrickPhase,
 }
 
 #[derive(Debug)]
-pub enum TrickPhase {
+pub(crate) enum TrickPhase {
     BeforeFirstCard,
     BeforeSecondCard { cards_played: [Card; 1] },
     BeforeThirdCard { cards_played: [Card; 2] },
@@ -20,7 +20,7 @@ pub enum TrickPhase {
 }
 
 impl TrickState {
-    pub fn create(bid_result: BidResultCalled, leader: Position) -> TrickState {
+    pub(crate) fn create(bid_result: BidResultCalled, leader: Position) -> TrickState {
         TrickState {
             bid_result,
             leader,
@@ -28,7 +28,7 @@ impl TrickState {
         }
     }
 
-    pub fn step(
+    pub(crate) fn step(
         &mut self,
         players: &mut [impl Player; 4],
         hands: &mut [Hand; 4],

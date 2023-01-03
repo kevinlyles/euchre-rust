@@ -1,19 +1,19 @@
 use crate::{deck::Deck, hand_state::HandState, player::Player, position::Position};
 
-pub struct GameState<T: Player> {
-    pub players: [T; 4],
-    pub phase: GamePhase,
-    pub north_south_score: u8,
-    pub east_west_score: u8,
+pub(crate) struct GameState<T: Player> {
+    pub(crate) players: [T; 4],
+    pub(crate) phase: GamePhase,
+    pub(crate) north_south_score: u8,
+    pub(crate) east_west_score: u8,
 }
 
-pub enum GamePhase {
+pub(crate) enum GamePhase {
     Playing { hand_state: HandState },
     Done,
 }
 
 impl<T: Player> GameState<T> {
-    pub fn create(players: [T; 4]) -> GameState<T> {
+    pub(crate) fn create(players: [T; 4]) -> GameState<T> {
         let (hands, trump_candidate) = Deck::create_shuffled_deck().deal();
         GameState {
             players,
@@ -25,7 +25,7 @@ impl<T: Player> GameState<T> {
         }
     }
 
-    pub fn step(&mut self) -> Option<String> {
+    pub(crate) fn step(&mut self) -> Option<String> {
         match &mut self.phase {
             GamePhase::Playing { ref mut hand_state } => {
                 match hand_state.step(&mut self.players) {

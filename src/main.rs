@@ -1,4 +1,18 @@
+#![forbid(non_ascii_idents)]
+#![warn(clippy::let_underscore)]
 #![warn(single_use_lifetimes)]
+#![warn(trivial_casts)]
+#![warn(trivial_numeric_casts)]
+#![warn(unreachable_pub)]
+#![warn(unsafe_code)]
+#![warn(unsafe_op_in_unsafe_fn)]
+#![warn(unused)]
+#![warn(unused_crate_dependencies)]
+#![warn(unused_lifetimes)]
+#![warn(unused_qualifications)]
+#![warn(unused_results)]
+#![warn(unused_tuple_struct_fields)]
+#![warn(variant_size_differences)]
 
 use bid_result::BidResultCalled;
 use card::Card;
@@ -123,9 +137,13 @@ fn main() {
                         Some(result_count) => {
                             *result_count += 1;
                         }
-                        None => {
-                            new_result_counts.insert(hand_result, 1);
-                        }
+                        None => match new_result_counts.insert(hand_result, 1) {
+                            Some(old_value) => panic!(
+                                "Got an old value after get_mut returned None: {}",
+                                old_value
+                            ),
+                            None => (),
+                        },
                     };
                     (count + 1, new_result_counts)
                 },
@@ -139,9 +157,13 @@ fn main() {
                             Some(score_count) => {
                                 *score_count += count;
                             }
-                            None => {
-                                new_result_counts.insert(result.clone(), *count);
-                            }
+                            None => match new_result_counts.insert(result.clone(), *count) {
+                                Some(old_value) => panic!(
+                                    "Got an old value after get_mut returned None: {}",
+                                    old_value
+                                ),
+                                None => (),
+                            },
                         }
                     }
                     (count_1 + count_2, new_result_counts)

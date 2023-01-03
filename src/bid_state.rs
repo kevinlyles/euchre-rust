@@ -1,13 +1,13 @@
 use crate::{bid_result::BidResultAll, card::Card, hand::Hand, player::Player, position::Position};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct BidState {
-    pub dealer: Position,
-    pub phase: BidPhase,
+pub(crate) struct BidState {
+    pub(crate) dealer: Position,
+    pub(crate) phase: BidPhase,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum BidPhase {
+pub(crate) enum BidPhase {
     FirstRoundFirstPlayer {
         trump_candidate: Card,
     },
@@ -51,14 +51,14 @@ pub enum BidPhase {
 }
 
 impl BidState {
-    pub fn create(dealer: Position, trump_candidate: Card) -> BidState {
+    pub(crate) fn create(dealer: Position, trump_candidate: Card) -> BidState {
         BidState {
             dealer,
             phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
         }
     }
 
-    pub fn step(
+    pub(crate) fn step(
         &mut self,
         players: &mut [impl Player; 4],
         hands: &mut [Hand; 4],

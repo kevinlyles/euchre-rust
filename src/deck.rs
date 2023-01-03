@@ -6,12 +6,12 @@ use enum_iterator::IntoEnumIterator;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
-pub struct Deck {
-    pub cards: Vec<Card>,
+pub(crate) struct Deck {
+    pub(crate) cards: Vec<Card>,
 }
 
 impl Deck {
-    pub fn create_all_cards() -> Vec<Card> {
+    pub(crate) fn create_all_cards() -> Vec<Card> {
         let mut cards = Vec::with_capacity(24);
         for suit in Suit::into_enum_iter() {
             for rank in RankWithBowers::into_enum_iter().skip(2) {
@@ -21,13 +21,13 @@ impl Deck {
         cards
     }
 
-    pub fn create_shuffled_deck() -> Deck {
+    pub(crate) fn create_shuffled_deck() -> Deck {
         let mut cards = Deck::create_all_cards();
         cards.shuffle(&mut thread_rng());
         Deck { cards }
     }
 
-    pub fn deal(&mut self) -> ([Hand; 4], Card) {
+    pub(crate) fn deal(&mut self) -> ([Hand; 4], Card) {
         let mut hands = [
             Hand { cards: Vec::new() },
             Hand { cards: Vec::new() },

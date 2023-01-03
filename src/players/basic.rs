@@ -1,15 +1,15 @@
-use crate::{player::Player, position::Position, rank_with_bowers::RankWithBowers};
+use crate::{hand::Hand, player::Player, position::Position, rank_with_bowers::RankWithBowers};
 
 #[derive(Clone)]
-pub struct BasicPlayer {
-    pub position: Position,
+pub(crate) struct BasicPlayer {
+    pub(crate) position: Position,
 }
 
 impl Player for BasicPlayer {
     fn should_order_up(
         &mut self,
-        hand: &crate::hand::Hand,
-        dealer: &crate::position::Position,
+        hand: &Hand,
+        dealer: &Position,
         trump_candidate: &crate::card::Card,
     ) -> bool {
         let trump_cards = hand.cards.iter().filter(|card| {
@@ -26,7 +26,7 @@ impl Player for BasicPlayer {
 
     fn call_trump(
         &mut self,
-        hand: &crate::hand::Hand,
+        hand: &Hand,
         _dealer: &Position,
         _turned_down: &crate::card::Card,
     ) -> Option<crate::suit::Suit> {

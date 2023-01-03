@@ -1,9 +1,9 @@
-pub struct HandsIterator {
+pub(crate) struct HandsIterator {
     state: Option<[CardLocation; 18]>,
 }
 
 impl HandsIterator {
-    pub fn create() -> HandsIterator {
+    pub(crate) fn create() -> HandsIterator {
         HandsIterator {
             state: Some([
                 CardLocation::West,
@@ -70,7 +70,7 @@ impl Iterator for HandsIterator {
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum CardLocation {
+pub(crate) enum CardLocation {
     West,
     North,
     East,

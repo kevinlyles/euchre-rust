@@ -17,14 +17,14 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct HandState {
-    pub dealer: Position,
+pub(crate) struct HandState {
+    pub(crate) dealer: Position,
     hands: [Hand; 4],
-    pub phase: HandPhase,
+    pub(crate) phase: HandPhase,
 }
 
 #[derive(Debug)]
-pub enum HandPhase {
+pub(crate) enum HandPhase {
     Bidding {
         bid_state: BidState,
     },
@@ -59,7 +59,7 @@ pub enum HandPhase {
 }
 
 impl HandState {
-    pub fn create(dealer: Position, trump_candidate: Card, hands: [Hand; 4]) -> HandState {
+    pub(crate) fn create(dealer: Position, trump_candidate: Card, hands: [Hand; 4]) -> HandState {
         HandState {
             dealer,
             hands,
@@ -69,7 +69,7 @@ impl HandState {
         }
     }
 
-    pub fn create_with_scenario(
+    pub(crate) fn create_with_scenario(
         dealer: Position,
         trump_candidate: Card,
         my_hand: Hand,
@@ -122,7 +122,7 @@ impl HandState {
         hands
     }
 
-    pub fn step(&mut self, players: &mut [impl Player; 4]) -> Option<(Position, u8)> {
+    pub(crate) fn step(&mut self, players: &mut [impl Player; 4]) -> Option<(Position, u8)> {
         match &mut self.phase {
             HandPhase::Bidding { bid_state } => {
                 match bid_state.step(players, &mut self.hands) {
@@ -247,12 +247,16 @@ impl HandState {
         }
     }
 
-    pub fn finish_bidding(&mut self, players: &mut [impl Player; 4]) -> Option<BidResultCalled> {
+    pub(crate) fn finish_bidding(
+        &mut self,
+        players: &mut [impl Player; 4],
+    ) -> Option<BidResultCalled> {
         loop {
             match &self.phase {
-                HandPhase::Bidding { .. } => {
-                    self.step(players);
-                }
+                HandPhase::Bidding { .. } => match self.step(players) {
+                    Some(_) => return None,
+                    None => (),
+                },
                 HandPhase::FirstTrick { bid_result, .. }
                 | HandPhase::SecondTrick { bid_result, .. }
                 | HandPhase::ThirdTrick { bid_result, .. }

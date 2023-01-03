@@ -1,20 +1,20 @@
 use crate::player::Player;
 
 #[derive(Clone)]
-pub struct Wrapper<'a> {
+pub(crate) struct Wrapper<'a> {
     bidder: Box<dyn Player + Send + Sync + 'a>,
     player: Box<dyn Player + Send + Sync + 'a>,
 }
 
 impl<'a> Wrapper<'a> {
-    pub fn create_separate_bidder(
+    pub(crate) fn create_separate_bidder(
         bidder: Box<dyn Player + Send + Sync + 'a>,
         player: Box<dyn Player + Send + Sync + 'a>,
     ) -> Wrapper<'a> {
         Wrapper { bidder, player }
     }
 
-    pub fn create_single_player(player: Box<dyn Player + Send + Sync + 'a>) -> Wrapper<'a> {
+    pub(crate) fn create_single_player(player: Box<dyn Player + Send + Sync + 'a>) -> Wrapper<'a> {
         Wrapper {
             bidder: player.clone(),
             player: player.clone(),
