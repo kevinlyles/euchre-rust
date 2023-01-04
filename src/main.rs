@@ -65,189 +65,33 @@ fn main() {
             .map_with(
                 (bidder, expected_bid_result),
                 |(bidder, expected_bid_result), mut hand_state| {
-                    let mut players = [
-                        if ignore_other_bids {
-                            Wrapper::create_separate_bidder(
-                                Box::new(PreprogrammedBidder::does_nothing()),
-                                Box::new(AdvancedPlayer {
-                                    position: Position::North,
-                                }),
-                            )
-                        } else {
-                            Wrapper::create_single_player(Box::new(AdvancedPlayer {
-                                position: Position::North,
-                            }))
-                        },
-                        if ignore_other_bids {
-                            Wrapper::create_separate_bidder(
-                                Box::new(PreprogrammedBidder::does_nothing()),
-                                Box::new(AdvancedPlayer {
-                                    position: Position::East,
-                                }),
-                            )
-                        } else {
-                            Wrapper::create_single_player(Box::new(AdvancedPlayer {
-                                position: Position::East,
-                            }))
-                        },
-                        Wrapper::create_separate_bidder(
-                            Box::new(bidder.clone()),
-                            Box::new(AdvancedPlayer {
-                                position: Position::South,
-                            }),
-                        ),
-                        if ignore_other_bids {
-                            Wrapper::create_separate_bidder(
-                                Box::new(PreprogrammedBidder::does_nothing()),
-                                Box::new(AdvancedPlayer {
-                                    position: Position::West,
-                                }),
-                            )
-                        } else {
-                            Wrapper::create_single_player(Box::new(AdvancedPlayer {
-                                position: Position::West,
-                            }))
-                        },
-                    ];
-                    match hand_state.finish_bidding(&mut players) {
-                        Some(bid_result) if bid_result == *expected_bid_result => (),
-                        _ => return HandResult::DifferentBidResult,
-                    };
-                    loop {
-                        match hand_state.step(&mut players) {
-                            Some((winner, score)) => {
-                                return if winner == Position::South
-                                    || winner == Position::South.partner()
-                                {
-                                    HandResult::ExpectedBidResult { score: score as i8 }
-                                } else {
-                                    HandResult::ExpectedBidResult {
-                                        score: -(score as i8),
-                                    }
-                                }
-                            }
-                            None => (),
-                        }
-                    }
+                    run_permutation(
+                        bidder,
+                        expected_bid_result,
+                        &mut hand_state,
+                        ignore_other_bids,
+                    )
                 },
             )
             .fold(
                 || (0, HashMap::<HandResult, u64>::new()),
-                |(count, result_counts), hand_result| {
-                    let mut new_result_counts = result_counts.clone();
-                    match new_result_counts.get_mut(&hand_result) {
-                        Some(result_count) => {
-                            *result_count += 1;
-                        }
-                        None => match new_result_counts.insert(hand_result, 1) {
-                            Some(old_value) => panic!(
-                                "Got an old value after get_mut returned None: {}",
-                                old_value
-                            ),
-                            None => (),
-                        },
-                    };
-                    (count + 1, new_result_counts)
+                |(count, mut result_counts), hand_result| {
+                    add_to_results(&mut result_counts, hand_result, 1);
+                    (count + 1, result_counts)
                 },
             )
             .reduce(
                 || (0, HashMap::<HandResult, u64>::new()),
-                |(count_1, result_counts_1), (count_2, result_counts_2)| {
-                    let mut new_result_counts = result_counts_1.clone();
-                    for (result, count) in result_counts_2.iter() {
-                        match new_result_counts.get_mut(result) {
-                            Some(score_count) => {
-                                *score_count += count;
-                            }
-                            None => match new_result_counts.insert(result.clone(), *count) {
-                                Some(old_value) => panic!(
-                                    "Got an old value after get_mut returned None: {}",
-                                    old_value
-                                ),
-                                None => (),
-                            },
-                        }
+                |(count_1, mut result_counts_1), (count_2, result_counts_2)| {
+                    for (result, count) in result_counts_2.into_iter() {
+                        add_to_results(&mut result_counts_1, result, count);
                     }
-                    (count_1 + count_2, new_result_counts)
+                    (count_1 + count_2, result_counts_1)
                 },
             );
-        let mut results: Vec<&HandResult> = result_counts.keys().collect();
-        results.sort();
-        let mut expected_value: i64 = 0;
-        let mut total_bid_count: u64 = 0;
-        println!("Results:");
-        for result in results {
-            let count = result_counts.get(&result).unwrap();
-            match result {
-                HandResult::DifferentBidResult => {
-                    print_score_line("You didn't get to bid", count, &total_count);
-                }
-                HandResult::ExpectedBidResult { score } => {
-                    total_bid_count += count;
-                    match score {
-                        -4 => {
-                            print_score_line(
-                                "Opponent successfully defended alone",
-                                count,
-                                &total_count,
-                            );
-                        }
-                        -2 => {
-                            print_score_line("Opponent euchred you", count, &total_count);
-                        }
-                        1 => {
-                            print_score_line("You made it", count, &total_count);
-                        }
-                        2 => {
-                            print_score_line("You took all 5 tricks", count, &total_count);
-                        }
-                        4 => {
-                            print_score_line("You made it alone", count, &total_count);
-                        }
-                        score => {
-                            print_score_line(
-                                format!("Unexpected score {}", score).as_str(),
-                                count,
-                                &total_count,
-                            );
-                        }
-                    };
-                    expected_value += (*score as i64) * (*count as i64);
-                }
-            }
-        }
-        println!(
-            "Expected value when you're able to bid: {:.2}",
-            (expected_value as f64) / (total_bid_count as f64)
-        )
+        tally_results(result_counts, total_count);
     } else {
-        log::set_logger(&LOGGER)
-            .map(|()| log::set_max_level(LevelFilter::Info))
-            .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
-        let players = [
-            AdvancedPlayer {
-                position: Position::North,
-            },
-            AdvancedPlayer {
-                position: Position::East,
-            },
-            AdvancedPlayer {
-                position: Position::South,
-            },
-            AdvancedPlayer {
-                position: Position::West,
-            },
-        ];
-        let mut game_state = GameState::create(players);
-        loop {
-            match game_state.step() {
-                Some(result) => {
-                    println!("{}", result);
-                    break;
-                }
-                None => (),
-            }
-        }
+        simulate_full_game();
     }
 }
 
@@ -380,6 +224,147 @@ fn process_args(
     )
 }
 
+fn run_permutation(
+    bidder: &mut PreprogrammedBidder,
+    expected_bid_result: &BidResultCalled,
+    hand_state: &mut HandState,
+    ignore_other_bids: bool,
+) -> HandResult {
+    let mut players = [
+        if ignore_other_bids {
+            Wrapper::create_separate_bidder(
+                Box::new(PreprogrammedBidder::does_nothing()),
+                Box::new(AdvancedPlayer {
+                    position: Position::North,
+                }),
+            )
+        } else {
+            Wrapper::create_single_player(Box::new(AdvancedPlayer {
+                position: Position::North,
+            }))
+        },
+        if ignore_other_bids {
+            Wrapper::create_separate_bidder(
+                Box::new(PreprogrammedBidder::does_nothing()),
+                Box::new(AdvancedPlayer {
+                    position: Position::East,
+                }),
+            )
+        } else {
+            Wrapper::create_single_player(Box::new(AdvancedPlayer {
+                position: Position::East,
+            }))
+        },
+        Wrapper::create_separate_bidder(
+            Box::new(bidder.clone()),
+            Box::new(AdvancedPlayer {
+                position: Position::South,
+            }),
+        ),
+        if ignore_other_bids {
+            Wrapper::create_separate_bidder(
+                Box::new(PreprogrammedBidder::does_nothing()),
+                Box::new(AdvancedPlayer {
+                    position: Position::West,
+                }),
+            )
+        } else {
+            Wrapper::create_single_player(Box::new(AdvancedPlayer {
+                position: Position::West,
+            }))
+        },
+    ];
+    match hand_state.finish_bidding(&mut players) {
+        Some(bid_result) if bid_result == *expected_bid_result => (),
+        _ => return HandResult::DifferentBidResult,
+    };
+    loop {
+        match hand_state.step(&mut players) {
+            Some((winner, score)) => {
+                return if winner == Position::South || winner == Position::South.partner() {
+                    HandResult::ExpectedBidResult { score: score as i8 }
+                } else {
+                    HandResult::ExpectedBidResult {
+                        score: -(score as i8),
+                    }
+                }
+            }
+            None => (),
+        }
+    }
+}
+
+fn add_to_results(
+    result_counts: &mut HashMap<HandResult, u64>,
+    hand_result: HandResult,
+    count: u64,
+) -> () {
+    match result_counts.get_mut(&hand_result) {
+        Some(result_count) => {
+            *result_count += count;
+        }
+        None => match result_counts.insert(hand_result, count) {
+            Some(old_value) => panic!(
+                "Got an old value after get_mut returned None: {}",
+                old_value
+            ),
+            None => (),
+        },
+    };
+}
+
+fn tally_results(result_counts: HashMap<HandResult, u64>, total_count: u64) -> () {
+    let mut results: Vec<&HandResult> = result_counts.keys().collect();
+    results.sort();
+    let mut expected_value: i64 = 0;
+    let mut total_bid_count: u64 = 0;
+    println!("Results:");
+    for result in results {
+        let count = result_counts.get(&result).unwrap();
+        match result {
+            HandResult::DifferentBidResult => {
+                print_score_line("You didn't get to bid", count, &total_count);
+            }
+            HandResult::ExpectedBidResult { score } => {
+                total_bid_count += count;
+                match score {
+                    -4 => {
+                        print_score_line(
+                            "Opponent successfully defended alone",
+                            count,
+                            &total_count,
+                        );
+                    }
+                    -2 => {
+                        print_score_line("Opponent euchred you", count, &total_count);
+                    }
+                    1 => {
+                        print_score_line("You made it", count, &total_count);
+                    }
+                    2 => {
+                        print_score_line("You took all 5 tricks", count, &total_count);
+                    }
+                    4 => {
+                        print_score_line("You made it alone", count, &total_count);
+                    }
+                    score => {
+                        print_score_line(
+                            format!("Unexpected score {}", score).as_str(),
+                            count,
+                            &total_count,
+                        );
+                    }
+                };
+                expected_value += (*score as i64) * (*count as i64);
+            }
+        }
+    }
+    println!(
+        "Expected value when you're able to bid: {:.2}",
+        (expected_value as f64) / (total_bid_count as f64)
+    )
+}
+
 fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
     println!(
         "{} {} times ({:.2}%)",
@@ -387,4 +372,34 @@ fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
         count.to_formatted_string(&Locale::en),
         (*count as f64) / (*total_count as f64) * 100f64
     )
+}
+
+fn simulate_full_game() -> () {
+    log::set_logger(&LOGGER)
+        .map(|()| log::set_max_level(LevelFilter::Info))
+        .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
+    let players = [
+        AdvancedPlayer {
+            position: Position::North,
+        },
+        AdvancedPlayer {
+            position: Position::East,
+        },
+        AdvancedPlayer {
+            position: Position::South,
+        },
+        AdvancedPlayer {
+            position: Position::West,
+        },
+    ];
+    let mut game_state = GameState::create(players);
+    loop {
+        match game_state.step() {
+            Some(result) => {
+                println!("{}", result);
+                break;
+            }
+            None => (),
+        }
+    }
 }
