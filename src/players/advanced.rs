@@ -3,14 +3,14 @@ use crate::{hand::Hand, player::Player, position::Position, rank_with_bowers::Ra
 #[derive(Clone)]
 pub(crate) struct AdvancedPlayer {
     position: Position,
-    trumpHasBeenLead: bool,
+    trump_has_been_lead: bool,
 }
 
 impl AdvancedPlayer {
     pub(crate) fn create(position: Position) -> AdvancedPlayer {
         AdvancedPlayer {
             position,
-            trumpHasBeenLead: false,
+            trump_has_been_lead: false,
         }
     }
 }
@@ -135,7 +135,7 @@ mod tests {
 
     use super::*;
 
-    fn testBidding(
+    fn test_bidding(
         description: String,
         hand: Hand,
         trump_candidate: Card,
