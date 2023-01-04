@@ -22,7 +22,9 @@ use hand_state::HandState;
 use log::LevelFilter;
 use logger::Logger;
 use num_format::{Locale, ToFormattedString};
-use players::{basic::BasicPlayer, preprogrammed_bidder::PreprogrammedBidder, wrapper::Wrapper};
+use players::{
+    advanced::AdvancedPlayer, preprogrammed_bidder::PreprogrammedBidder, wrapper::Wrapper,
+};
 use position::Position;
 use rayon::prelude::ParallelIterator;
 use std::{collections::HashMap, env};
@@ -67,42 +69,42 @@ fn main() {
                         if ignore_other_bids {
                             Wrapper::create_separate_bidder(
                                 Box::new(PreprogrammedBidder::does_nothing()),
-                                Box::new(BasicPlayer {
+                                Box::new(AdvancedPlayer {
                                     position: Position::North,
                                 }),
                             )
                         } else {
-                            Wrapper::create_single_player(Box::new(BasicPlayer {
+                            Wrapper::create_single_player(Box::new(AdvancedPlayer {
                                 position: Position::North,
                             }))
                         },
                         if ignore_other_bids {
                             Wrapper::create_separate_bidder(
                                 Box::new(PreprogrammedBidder::does_nothing()),
-                                Box::new(BasicPlayer {
+                                Box::new(AdvancedPlayer {
                                     position: Position::East,
                                 }),
                             )
                         } else {
-                            Wrapper::create_single_player(Box::new(BasicPlayer {
+                            Wrapper::create_single_player(Box::new(AdvancedPlayer {
                                 position: Position::East,
                             }))
                         },
                         Wrapper::create_separate_bidder(
                             Box::new(bidder.clone()),
-                            Box::new(BasicPlayer {
+                            Box::new(AdvancedPlayer {
                                 position: Position::South,
                             }),
                         ),
                         if ignore_other_bids {
                             Wrapper::create_separate_bidder(
                                 Box::new(PreprogrammedBidder::does_nothing()),
-                                Box::new(BasicPlayer {
+                                Box::new(AdvancedPlayer {
                                     position: Position::West,
                                 }),
                             )
                         } else {
-                            Wrapper::create_single_player(Box::new(BasicPlayer {
+                            Wrapper::create_single_player(Box::new(AdvancedPlayer {
                                 position: Position::West,
                             }))
                         },
@@ -223,16 +225,16 @@ fn main() {
             .map(|()| log::set_max_level(LevelFilter::Info))
             .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
         let players = [
-            BasicPlayer {
+            AdvancedPlayer {
                 position: Position::North,
             },
-            BasicPlayer {
+            AdvancedPlayer {
                 position: Position::East,
             },
-            BasicPlayer {
+            AdvancedPlayer {
                 position: Position::South,
             },
-            BasicPlayer {
+            AdvancedPlayer {
                 position: Position::West,
             },
         ];
