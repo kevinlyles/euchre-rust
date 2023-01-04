@@ -234,44 +234,30 @@ fn run_permutation(
         if ignore_other_bids {
             Wrapper::create_separate_bidder(
                 Box::new(PreprogrammedBidder::does_nothing()),
-                Box::new(AdvancedPlayer {
-                    position: Position::North,
-                }),
+                Box::new(AdvancedPlayer::create(Position::North)),
             )
         } else {
-            Wrapper::create_single_player(Box::new(AdvancedPlayer {
-                position: Position::North,
-            }))
+            Wrapper::create_single_player(Box::new(AdvancedPlayer::create(Position::North)))
         },
         if ignore_other_bids {
             Wrapper::create_separate_bidder(
                 Box::new(PreprogrammedBidder::does_nothing()),
-                Box::new(AdvancedPlayer {
-                    position: Position::East,
-                }),
+                Box::new(AdvancedPlayer::create(Position::East)),
             )
         } else {
-            Wrapper::create_single_player(Box::new(AdvancedPlayer {
-                position: Position::East,
-            }))
+            Wrapper::create_single_player(Box::new(AdvancedPlayer::create(Position::East)))
         },
         Wrapper::create_separate_bidder(
             Box::new(bidder.clone()),
-            Box::new(AdvancedPlayer {
-                position: Position::South,
-            }),
+            Box::new(AdvancedPlayer::create(Position::South)),
         ),
         if ignore_other_bids {
             Wrapper::create_separate_bidder(
                 Box::new(PreprogrammedBidder::does_nothing()),
-                Box::new(AdvancedPlayer {
-                    position: Position::West,
-                }),
+                Box::new(AdvancedPlayer::create(Position::West)),
             )
         } else {
-            Wrapper::create_single_player(Box::new(AdvancedPlayer {
-                position: Position::West,
-            }))
+            Wrapper::create_single_player(Box::new(AdvancedPlayer::create(Position::West)))
         },
     ];
     match hand_state.finish_bidding(&mut players) {
@@ -379,18 +365,10 @@ fn simulate_full_game() -> () {
         .map(|()| log::set_max_level(LevelFilter::Info))
         .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
     let players = [
-        AdvancedPlayer {
-            position: Position::North,
-        },
-        AdvancedPlayer {
-            position: Position::East,
-        },
-        AdvancedPlayer {
-            position: Position::South,
-        },
-        AdvancedPlayer {
-            position: Position::West,
-        },
+        AdvancedPlayer::create(Position::North),
+        AdvancedPlayer::create(Position::East),
+        AdvancedPlayer::create(Position::South),
+        AdvancedPlayer::create(Position::West),
     ];
     let mut game_state = GameState::create(players);
     loop {
