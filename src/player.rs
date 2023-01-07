@@ -64,7 +64,13 @@ pub trait Player: Clone {
         hand.cards[0]
     }
 
-    fn play_card(&mut self, hand: &Hand, _trump: &Suit, led: Option<Suit>) -> Card {
+    fn play_card(
+        &mut self,
+        hand: &Hand,
+        _caller: &Position,
+        _trump: &Suit,
+        led: Option<Suit>,
+    ) -> Card {
         match led {
             Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
                 Some(card) => *card,

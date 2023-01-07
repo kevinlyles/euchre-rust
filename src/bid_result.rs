@@ -86,4 +86,12 @@ impl BidResultCalled {
             | Self::DefendedAlone { trump, .. } => *trump,
         }
     }
+
+    pub fn caller(&self) -> Position {
+        match self {
+            Self::Called { caller, .. }
+            | Self::CalledAlone { caller, .. }
+            | Self::DefendedAlone { caller, .. } => *caller,
+        }
+    }
 }

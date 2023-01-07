@@ -2,6 +2,7 @@ use core::fmt;
 use enum_iterator::IntoEnumIterator;
 
 #[derive(Copy, Clone, Debug, IntoEnumIterator, PartialEq, Eq)]
+#[repr(usize)]
 pub enum Suit {
     Spades,
     Hearts,

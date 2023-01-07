@@ -37,8 +37,12 @@ impl TrickState {
             TrickPhase::BeforeFirstCard => {
                 let player = self.leader;
                 let hand = &mut hands[player.index()];
-                let mut card =
-                    players[player.index()].play_card(&hand, &self.bid_result.trump(), None);
+                let mut card = players[player.index()].play_card(
+                    &hand,
+                    &self.bid_result.caller(),
+                    &self.bid_result.trump(),
+                    None,
+                );
                 if !hand.cards.contains(&card) {
                     card = hand.cards[0];
                 }
@@ -52,7 +56,14 @@ impl TrickState {
                 let player = &self.leader.next_position_playing(&self.bid_result);
                 let trump = &self.bid_result.trump();
                 let suit_led = &cards_played[0].suit;
-                let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                let card = TrickState::play_card(
+                    player,
+                    players,
+                    hands,
+                    &self.bid_result.caller(),
+                    trump,
+                    suit_led,
+                );
                 self.phase = TrickPhase::BeforeThirdCard {
                     cards_played: [cards_played[0], card],
                 };
@@ -74,7 +85,14 @@ impl TrickState {
                 } else {
                     let trump = &self.bid_result.trump();
                     let suit_led = &cards_played[0].suit;
-                    let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                    let card = TrickState::play_card(
+                        player,
+                        players,
+                        hands,
+                        &self.bid_result.caller(),
+                        trump,
+                        suit_led,
+                    );
                     self.phase = TrickPhase::BeforeFourthCard {
                         cards_played: [cards_played[0], cards_played[1], card],
                     }
@@ -98,7 +116,14 @@ impl TrickState {
                 } else {
                     let trump = &self.bid_result.trump();
                     let suit_led = &cards_played[0].suit;
-                    let card = TrickState::play_card(player, players, hands, trump, suit_led);
+                    let card = TrickState::play_card(
+                        player,
+                        players,
+                        hands,
+                        &self.bid_result.caller(),
+                        trump,
+                        suit_led,
+                    );
                     let new_cards_played =
                         [cards_played[0], cards_played[1], cards_played[2], card];
                     self.phase = TrickPhase::Done {
@@ -119,11 +144,12 @@ impl TrickState {
         player: &Position,
         players: &mut [impl Player; 4],
         hands: &mut [Hand; 4],
+        caller: &Position,
         trump: &Suit,
         suit_led: &Suit,
     ) -> Card {
         let hand = &mut hands[player.index()];
-        let mut card = players[player.index()].play_card(&hand, &trump, None);
+        let mut card = players[player.index()].play_card(&hand, &caller, &trump, None);
         if !hand.cards.contains(&card) {
             card = hand.cards[0]
         }

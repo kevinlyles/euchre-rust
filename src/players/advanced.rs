@@ -1,16 +1,21 @@
-use crate::{hand::Hand, player::Player, position::Position, rank_with_bowers::RankWithBowers};
+use enum_iterator::IntoEnumIterator;
+
+use crate::{
+    card::Card, hand::Hand, player::Player, position::Position, rank_with_bowers::RankWithBowers,
+    suit::Suit,
+};
 
 #[derive(Clone)]
 pub(crate) struct AdvancedPlayer {
     position: Position,
-    trump_has_been_lead: bool,
+    trump_has_been_led: bool,
 }
 
 impl AdvancedPlayer {
     pub(crate) fn create(position: Position) -> AdvancedPlayer {
         AdvancedPlayer {
             position,
-            trump_has_been_lead: false,
+            trump_has_been_led: false,
         }
     }
 }
@@ -19,27 +24,50 @@ impl Player for AdvancedPlayer {
     fn should_order_up(
         &mut self,
         hand: &Hand,
-        dealer: &Position,
-        trump_candidate: &crate::card::Card,
+        &dealer: &Position,
+        &trump_candidate: &Card,
     ) -> bool {
+        let to_me = self.position == dealer;
+        let to_partner = self.position.partner() == dealer;
+        let mut trump_cards = hand.cards.iter().filter(|card| {
+            card.suit == trump_candidate.suit
+                || card.rank == RankWithBowers::Jack
+                    && card.suit == trump_candidate.suit.other_suit_of_same_color()
+        });
+        match trump_cards.clone().count() + if to_me { 1 } else { 0 } {
+            6 | 5 | 4 => true,
+            3 if to_me || to_partner => true,
+            2 if trump_cards.any(|&card| {
+                card.suit == trump_candidate.suit && card.rank == RankWithBowers::Jack
+            }) && hand.cards.iter().any(|card| {
+                card.rank == RankWithBowers::Ace && card.suit != trump_candidate.suit
+            }) =>
+            {
+                true
+            }
+            _ => false,
+        }
+    }
+
+    fn should_order_up_alone(
+        &mut self,
+        hand: &Hand,
+        &dealer: &Position,
+        trump_candidate: &Card,
+    ) -> bool {
+        let to_me = self.position == dealer;
         let trump_cards = hand.cards.iter().filter(|card| {
             card.suit == trump_candidate.suit
                 || card.rank == RankWithBowers::Jack
                     && card.suit == trump_candidate.suit.other_suit_of_same_color()
         });
-        match trump_cards.count() {
-            4 | 5 => true,
-            3 if *dealer == self.position || *dealer == self.position.partner() => true,
+        match trump_cards.count() + if to_me { 1 } else { 0 } {
+            6 | 5 => true,
             _ => false,
         }
     }
 
-    fn call_trump(
-        &mut self,
-        hand: &Hand,
-        _dealer: &Position,
-        _turned_down: &crate::card::Card,
-    ) -> Option<crate::suit::Suit> {
+    fn call_trump(&mut self, hand: &Hand, _dealer: &Position, _turned_down: &Card) -> Option<Suit> {
         if hand
             .cards
             .iter()
@@ -61,65 +89,117 @@ impl Player for AdvancedPlayer {
         }
     }
 
-    fn should_order_up_alone(
-        &mut self,
-        _hand: &Hand,
-        _dealer: &Position,
-        _trump_candidate: &crate::card::Card,
-    ) -> bool {
-        false
-    }
-
     fn should_defend_alone_ordered(
         &mut self,
         _hand: &Hand,
         _dealer: &Position,
-        _trump_candidate: &crate::card::Card,
+        _trump_candidate: &Card,
     ) -> bool {
         false
     }
 
     fn should_call_alone(
         &mut self,
-        _hand: &Hand,
+        hand: &Hand,
         _dealer: &Position,
-        _trump: &crate::suit::Suit,
-        _turned_down: &crate::card::Card,
+        &trump: &Suit,
+        _turned_down: &Card,
     ) -> bool {
-        false
+        let trump_cards = hand.cards.iter().filter(|card| {
+            card.suit == trump
+                || card.rank == RankWithBowers::Jack
+                    && card.suit == trump.other_suit_of_same_color()
+        });
+        match trump_cards.count() {
+            5 => true,
+            _ => false,
+        }
     }
 
     fn should_defend_alone_called(
         &mut self,
         _hand: &Hand,
         _dealer: &Position,
-        _trump: &crate::suit::Suit,
-        _turned_down: &crate::card::Card,
+        _trump: &Suit,
+        _turned_down: &Card,
     ) -> bool {
         false
     }
 
-    fn choose_discard(&mut self, hand: &Hand, trump: &crate::suit::Suit) -> crate::card::Card {
-        *hand
-            .cards
-            .iter()
-            .filter(|card| card.suit != *trump)
-            .nth(0)
-            .unwrap_or(&hand.cards[0])
+    fn choose_discard(&mut self, hand: &Hand, trump: &Suit) -> Card {
+        let mut suit_counts: [u8; 4] = [0; 4];
+        let mut has_ace: [bool; 4] = [false; 4];
+        let mut lowest_cards: [Option<Card>; 4] = [None; 4];
+        for &card in &hand.cards {
+            suit_counts[card.suit as usize] += 1;
+            if card.rank == RankWithBowers::Ace {
+                has_ace[card.suit as usize] = true;
+            }
+            match lowest_cards[card.suit as usize] {
+                Some(lowest_card) if lowest_card.rank < card.rank => (),
+                _ => lowest_cards[card.suit as usize] = Some(card),
+            }
+        }
+
+        fn get_discard<F>(
+            &trump: &Suit,
+            lowest_cards: &[Option<Card>; 4],
+            filter: F,
+        ) -> Option<Card>
+        where
+            F: Fn(Suit) -> bool,
+        {
+            let mut lowest_card: Option<Card> = None;
+
+            for suit in Suit::into_enum_iter().filter(|&suit| suit != trump) {
+                match lowest_cards[suit as usize] {
+                    Some(card) if filter(suit) => match lowest_card {
+                        Some(lowest_card) if lowest_card.rank < card.rank => (),
+                        _ => lowest_card = Some(card),
+                    },
+                    _ => (),
+                }
+            }
+
+            lowest_card
+        }
+
+        if let Some(card) = get_discard(trump, &lowest_cards, |suit| {
+            suit_counts[suit as usize] == 1 && !has_ace[suit as usize]
+        }) {
+            card
+        } else if let Some(card) = get_discard(trump, &lowest_cards, |suit| !has_ace[suit as usize])
+        {
+            card
+        } else {
+            get_discard(trump, &lowest_cards, |_| true).unwrap()
+        }
     }
 
     fn play_card(
         &mut self,
         hand: &Hand,
-        _trump: &crate::suit::Suit,
-        led: Option<crate::suit::Suit>,
-    ) -> crate::card::Card {
+        &caller: &Position,
+        &trump: &Suit,
+        led: Option<Suit>,
+    ) -> Card {
         match led {
             Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
                 Some(card) => *card,
                 None => hand.cards[0],
             },
-            None => hand.cards[0],
+            None => {
+                if self.position == caller
+                    || self.position.partner() == caller && !self.trump_has_been_led
+                {
+                    match hand.cards.iter().filter(|card| card.suit == trump).nth(0) {
+                        Some(&card) => card,
+                        None => hand.cards[0],
+                    }
+                } else {
+                    hand.cards[0]
+                }
+            }
         }
     }
 }
