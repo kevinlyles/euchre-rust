@@ -135,8 +135,980 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn test_cases() {
+        test_bidding(
+            "All nines and tens, dealer, candidate trump matches",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::King,
+            },
+            Position::South,
+            false,
+            None,
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off king, off king, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::King,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::King,
+            },
+            Position::West,
+            false,
+            None,
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right, off ace, off jack ten nine, dealer, candidate trump matches",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Nine,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Nine,
+            }),
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off ten nine, dealer, candidate trump matches",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Nine,
+            }),
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right, off ace, off jack ten nine, dealer, candidate trump matches",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Nine,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Nine,
+            }),
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Perfect hand, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ace,
+            },
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            true,
+        );
+
+        test_bidding(
+            "Right king queen, two off queens, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Queen,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Queen,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ace,
+            },
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            false,
+        );
+
+        test_bidding(
+            "Right left king, off king nine, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ace,
+            },
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            true,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off ten nine, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::King,
+            },
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            false,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off king queen, dealer, candidate trump is ten",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Queen,
+            }),
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right left, off ace, off king queen, dealer, candidate trump is nine",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Queen,
+            }),
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off ten nine, candidate trump matches but goes to opponents",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::West,
+            false,
+            None,
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off ten nine, candidate trump matches and goes to partner",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::North,
+            true,
+            None,
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off ace, off nine, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ace,
+            },
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            false,
+        );
+
+        test_bidding(
+            "Perfect hand, candidate trump matches",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Queen,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::West,
+            true,
+            None,
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right left ace, off ace king, follow dealer, other suit is better",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::King,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::King,
+            },
+            Position::East,
+            false,
+            None,
+            Some(Suit::Clubs),
+            true,
+        );
+
+        test_bidding(
+            "Right left ace, off ace king, second after dealer, other suit is better",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::King,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::King,
+            },
+            Position::North,
+            true,
+            None,
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right nine, off ace, off king, off king, candidate trump does not match but makes one of the off kings good",
+            Hand {cards:vec![
+                Card{suit:Suit::Spades, rank:RankWithBowers::Jack},
+                Card{suit:Suit::Spades, rank:RankWithBowers::Nine},
+                Card{suit:Suit::Clubs, rank:RankWithBowers::Ace},
+                Card{suit:Suit::Diamonds, rank:RankWithBowers::King},
+                Card{suit:Suit::Hearts, rank:RankWithBowers::King},
+            ]},
+            Card{suit:Suit::Diamonds, rank:RankWithBowers::Ace},
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            false,
+        );
+
+        test_bidding(
+            "King queen ten nine, off nine, candidate trump does not match",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Queen,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ten,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Nine,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Nine,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ace,
+            },
+            Position::West,
+            false,
+            None,
+            Some(Suit::Spades),
+            false,
+        );
+
+        test_bidding(
+            "Perfect hand, candidate trump matches, dealer",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Ten,
+            }),
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Perfect hand after picking it up, candidate trump matches, dealer",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Ten,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Queen,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Diamonds,
+                rank: RankWithBowers::Ten,
+            }),
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right left ace, off queen, off ten, candidate trump matches, dealer",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Diamonds,
+                        rank: RankWithBowers::Queen,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Ten,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::King,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Ten,
+            }),
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right left ace, off queen, off ten, candidate trump matches, dealer (other order of offsuits)",
+            Hand {cards:vec![
+                Card{suit:Suit::Spades, rank:RankWithBowers::Jack},
+                Card{suit:Suit::Clubs, rank:RankWithBowers::Jack},
+                Card{suit:Suit::Spades, rank:RankWithBowers::Ace},
+                Card{suit:Suit::Hearts, rank:RankWithBowers::Queen},
+                Card{suit:Suit::Diamonds, rank:RankWithBowers::Ten},
+            ]},
+            Card{suit:Suit::Spades, rank:RankWithBowers::King},
+            Position::South,
+            true,
+            Some(Card{suit:Suit::Diamonds, rank:RankWithBowers::Ten}),
+            None,
+            false,
+        );
+
+        test_bidding(
+            "Right left ace, off king queen, candidate trump matches, dealer",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::King,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Queen,
+            }),
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right left ace, off king queen, candidate trump matches, dealer (other order of offsuits)",
+            Hand {cards:vec![
+                Card{suit:Suit::Spades, rank:RankWithBowers::Jack},
+                Card{suit:Suit::Clubs, rank:RankWithBowers::Jack},
+                Card{suit:Suit::Spades, rank:RankWithBowers::Ace},
+                Card{suit:Suit::Hearts, rank:RankWithBowers::Queen},
+                Card{suit:Suit::Hearts, rank:RankWithBowers::King},
+            ]},
+            Card{suit:Suit::Spades, rank:RankWithBowers::King},
+            Position::South,
+            true,
+            Some(Card{suit:Suit::Hearts, rank:RankWithBowers::Queen}),
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right left ace king, off ace, candidate trump matches, dealer",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Clubs,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Ace,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Spades,
+                rank: RankWithBowers::Queen,
+            },
+            Position::South,
+            true,
+            Some(Card {
+                suit: Suit::Hearts,
+                rank: RankWithBowers::Ace,
+            }),
+            None,
+            true,
+        );
+
+        test_bidding(
+            "Right ace king, off king queen, candidate trump is left, dealer",
+            Hand {
+                cards: vec![
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Jack,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::Ace,
+                    },
+                    Card {
+                        suit: Suit::Spades,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::King,
+                    },
+                    Card {
+                        suit: Suit::Hearts,
+                        rank: RankWithBowers::Queen,
+                    },
+                ],
+            },
+            Card {
+                suit: Suit::Clubs,
+                rank: RankWithBowers::Jack,
+            },
+            Position::East,
+            false,
+            None,
+            Some(Suit::Spades),
+            true,
+        );
+    }
+
     fn test_bidding(
-        description: String,
+        description: &str,
         hand: Hand,
         trump_candidate: Card,
         dealer: Position,
@@ -149,7 +1121,7 @@ mod tests {
 
         assert!(
             discard.is_some() || !orders_up || !am_dealer,
-            "You must specify a discard if things are orderd up and your'e the dealer"
+                "{description}: You must specify a discard if things are ordered up and you're the dealer",
         );
         if discard.is_some() && orders_up && am_dealer {
             let mut found = hand.cards.contains(&discard.unwrap());
@@ -158,13 +1130,13 @@ mod tests {
             }
             assert!(
                 found,
-                "Expected discard is neither in hand nor trump candidate"
+                "{description}: Expected discard is neither in hand nor trump candidate"
             );
         }
         if !orders_up {
             assert!(
                 calls_suit.is_none() || calls_suit.unwrap() != trump_candidate.suit,
-                "Expected to call trump candidate's suit in round 2"
+                "{description}: Expected to call trump candidate's suit in round 2"
             );
         }
 
@@ -196,17 +1168,17 @@ mod tests {
             match bid_result {
                 BidResultAll::Called { trump, caller }
                 | BidResultAll::CalledAlone { trump, caller } => {
-                    assert!(caller == Position::South, "Wrong caller");
-                    assert!(trump == trump_candidate.suit, "Wrong suit");
+                    assert!(caller == Position::South, "{description}: Wrong caller");
+                    assert!(trump == trump_candidate.suit, "{description}: Wrong suit");
                 }
-                _ => assert!(false, "Did not order it up"),
+                _ => assert!(false, "{description}: Did not order it up"),
             }
 
             if am_dealer {
                 let discard = discard.unwrap();
                 assert!(
                     !hands[Position::South.index()].cards.contains(&discard),
-                    "Did not discard {}",
+                    "{description}: Did not discard {}",
                     discard
                 );
             }
@@ -217,10 +1189,10 @@ mod tests {
                 match bid_result {
                     BidResultAll::Called { trump, caller }
                     | BidResultAll::CalledAlone { trump, caller } => {
-                        assert!(caller == Position::South, "Wrong caller");
-                        assert!(trump == called_suit, "Wrong suit");
+                        assert!(caller == Position::South, "{description}: Wrong caller");
+                        assert!(trump == called_suit, "{description}: Wrong suit");
                     }
-                    _ => assert!(false, "Did not call a suit"),
+                    _ => assert!(false, "{description}: Did not call a suit"),
                 }
             }
         }
@@ -228,480 +1200,13 @@ mod tests {
         if orders_up || calls_suit.is_some() {
             match bid_result {
                 BidResultAll::Called { .. } => {
-                    assert!(!goes_alone, "Did not go alone")
+                    assert!(!goes_alone, "{description}: Did not go alone")
                 }
-                BidResultAll::CalledAlone { .. } => assert!(goes_alone, "Went alone"),
-                _ => assert!(false, "Nothing was called"),
+                BidResultAll::CalledAlone { .. } => {
+                    assert!(goes_alone, "{description}: Went alone")
+                }
+                _ => assert!(false, "{description}: Nothing was called"),
             }
         }
     }
-
-    /*
-    describe("Kevin AI Bidding", function () {
-        describe("Smoke tests", function () {
-            it("Can be instantiated", function () {
-                expect(new KevinAI()).toBeDefined();
-            });
-        });
-
-        testBidding(
-            "All nines and tens, dealer, candidate trump matches",
-            [
-                new Card(Suit.Spades, Rank.Ten),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Diamonds, Rank.Nine),
-                new Card(Suit.Clubs, Rank.Nine),
-                new Card(Suit.Hearts, Rank.Nine),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.South,
-            false,
-            null,
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right nine, off ace, off king, off king, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Diamonds, Rank.Ace),
-                new Card(Suit.Clubs, Rank.King),
-                new Card(Suit.Hearts, Rank.King),
-            ],
-            new Card(Suit.Diamonds, Rank.King),
-            Player.West,
-            false,
-            null,
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right, off ace, off jack ten nine, dealer, candidate trump matches",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Jack),
-                new Card(Suit.Diamonds, Rank.Ten),
-                new Card(Suit.Diamonds, Rank.Nine),
-            ],
-            new Card(Suit.Spades, Rank.Nine),
-            Player.South,
-            true,
-            new Card(Suit.Diamonds, Rank.Nine),
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right nine, off ace, off ten nine, dealer, candidate trump matches",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Ten),
-                new Card(Suit.Diamonds, Rank.Nine),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.South,
-            true,
-            new Card(Suit.Diamonds, Rank.Nine),
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right, off ace, off jack ten nine, dealer, candidate trump matches",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Jack),
-                new Card(Suit.Diamonds, Rank.Ten),
-                new Card(Suit.Diamonds, Rank.Nine),
-            ],
-            new Card(Suit.Spades, Rank.Nine),
-            Player.South,
-            true,
-            new Card(Suit.Diamonds, Rank.Nine),
-            null,
-            false,
-        );
-
-        testBidding(
-            "Perfect hand, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Spades, Rank.Queen),
-            ],
-            new Card(Suit.Diamonds, Rank.Ace),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            true,
-        );
-
-        testBidding(
-            "Right king queen, two off queens, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Spades, Rank.Queen),
-                new Card(Suit.Hearts, Rank.Queen),
-                new Card(Suit.Diamonds, Rank.Queen),
-            ],
-            new Card(Suit.Diamonds, Rank.Ace),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            false,
-        );
-
-        testBidding(
-            "Right left king, off king nine, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Hearts, Rank.King),
-                new Card(Suit.Hearts, Rank.Nine),
-            ],
-            new Card(Suit.Diamonds, Rank.Ace),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            true,
-        );
-
-        testBidding(
-            "Right nine, off ace, off ten nine, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Diamonds, Rank.Ace),
-                new Card(Suit.Hearts, Rank.Ten),
-                new Card(Suit.Hearts, Rank.Nine),
-            ],
-            new Card(Suit.Diamonds, Rank.King),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            false,
-        );
-
-        testBidding(
-            "Right nine, off ace, off king queen, dealer, candidate trump is ten",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Diamonds, Rank.Ace),
-                new Card(Suit.Hearts, Rank.King),
-                new Card(Suit.Hearts, Rank.Queen),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.South,
-            true,
-            new Card(Suit.Hearts, Rank.Queen),
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right left, off ace, off king queen, dealer, candidate trump is nine",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Diamonds, Rank.Ace),
-                new Card(Suit.Hearts, Rank.King),
-                new Card(Suit.Hearts, Rank.Queen),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.South,
-            true,
-            new Card(Suit.Hearts, Rank.Queen),
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right nine, off ace, off ten nine, candidate trump matches but goes to opponents",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Ten),
-                new Card(Suit.Diamonds, Rank.Nine),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.West,
-            false,
-            null,
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right nine, off ace, off ten nine, candidate trump matches and goes to partner",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Ten),
-                new Card(Suit.Diamonds, Rank.Nine),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.North,
-            true,
-            null,
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right nine, off ace, off ace, off nine, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Hearts, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Nine),
-            ],
-            new Card(Suit.Diamonds, Rank.Ace),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            false,
-        );
-
-        testBidding(
-            "Perfect hand, candidate trump matches",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Spades, Rank.Queen),
-                new Card(Suit.Clubs, Rank.Jack),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.West,
-            true,
-            null,
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right left ace, off ace king, follow dealer, other suit is better",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Clubs, Rank.King),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.East,
-            false,
-            null,
-            Suit.Clubs,
-            true,
-        );
-
-        testBidding(
-            "Right left ace, off ace king, second after dealer, other suit is better",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Clubs, Rank.King),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.North,
-            true,
-            null,
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right nine, off ace, off king, off king, candidate trump does not match but makes one of the off kings good",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Clubs, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.King),
-                new Card(Suit.Hearts, Rank.King),
-            ],
-            new Card(Suit.Diamonds, Rank.Ace),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            false,
-        );
-
-        testBidding(
-            "King queen ten nine, off nine, candidate trump does not match",
-            [
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Spades, Rank.Queen),
-                new Card(Suit.Spades, Rank.Ten),
-                new Card(Suit.Spades, Rank.Nine),
-                new Card(Suit.Hearts, Rank.Nine),
-            ],
-            new Card(Suit.Diamonds, Rank.Ace),
-            Player.West,
-            false,
-            null,
-            Suit.Spades,
-            false,
-        );
-
-        testBidding(
-            "Perfect hand, candidate trump matches, dealer",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Spades, Rank.Queen),
-            ],
-            new Card(Suit.Spades, Rank.Ten),
-            Player.South,
-            true,
-            new Card(Suit.Spades, Rank.Ten),
-            null,
-            true,
-        );
-
-        testBidding(
-            "Perfect hand after picking it up, candidate trump matches, dealer",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Diamonds, Rank.Ten),
-            ],
-            new Card(Suit.Spades, Rank.Queen),
-            Player.South,
-            true,
-            new Card(Suit.Diamonds, Rank.Ten),
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right left ace, off queen, off ten, candidate trump matches, dealer",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Diamonds, Rank.Queen),
-                new Card(Suit.Hearts, Rank.Ten),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.South,
-            true,
-            new Card(Suit.Hearts, Rank.Ten),
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right left ace, off queen, off ten, candidate trump matches, dealer (other order of offsuits)",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Hearts, Rank.Queen),
-                new Card(Suit.Diamonds, Rank.Ten),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.South,
-            true,
-            new Card(Suit.Diamonds, Rank.Ten),
-            null,
-            false,
-        );
-
-        testBidding(
-            "Right left ace, off king queen, candidate trump matches, dealer",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Hearts, Rank.King),
-                new Card(Suit.Hearts, Rank.Queen),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.South,
-            true,
-            new Card(Suit.Hearts, Rank.Queen),
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right left ace, off king queen, candidate trump matches, dealer (other order of offsuits)",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Hearts, Rank.Queen),
-                new Card(Suit.Hearts, Rank.King),
-            ],
-            new Card(Suit.Spades, Rank.King),
-            Player.South,
-            true,
-            new Card(Suit.Hearts, Rank.Queen),
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right left ace king, off ace, candidate trump matches, dealer",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Clubs, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Hearts, Rank.Ace),
-            ],
-            new Card(Suit.Spades, Rank.Queen),
-            Player.South,
-            true,
-            new Card(Suit.Hearts, Rank.Ace),
-            null,
-            true,
-        );
-
-        testBidding(
-            "Right ace king, off king queen, candidate trump is left, dealer",
-            [
-                new Card(Suit.Spades, Rank.Jack),
-                new Card(Suit.Spades, Rank.Ace),
-                new Card(Suit.Spades, Rank.King),
-                new Card(Suit.Hearts, Rank.King),
-                new Card(Suit.Hearts, Rank.Queen),
-            ],
-            new Card(Suit.Clubs, Rank.Jack),
-            Player.East,
-            false,
-            null,
-            Suit.Spades,
-            true,
-        );
-    });
-    */
 }
