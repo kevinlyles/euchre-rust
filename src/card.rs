@@ -1,5 +1,49 @@
-use crate::{rank_with_bowers::RankWithBowers, suit::Suit};
+use crate::{rank::Rank, rank_with_bowers::RankWithBowers, suit::Suit};
 use core::fmt;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct CardBeforeBidding {
+    pub suit: Suit,
+    pub rank: Rank,
+}
+
+impl From<Card> for CardBeforeBidding {
+    fn from(value: Card) -> Self {
+        CardBeforeBidding {
+            suit: if value.rank == RankWithBowers::LeftBower {
+                value.suit.other_suit_of_same_color()
+            } else {
+                value.suit
+            },
+            rank: value.rank.rank_for_display(),
+        }
+    }
+}
+
+impl fmt::Display for CardBeforeBidding {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let unicode_value =
+            self.suit.starting_point_for_unicode_card() + self.rank.offset_for_unicode_card();
+        let unicode_char = char::from_u32(unicode_value);
+        match unicode_char {
+            Some(c) => write!(f, "{}", c),
+            _ => write!(f, "{}{}", self.rank, self.suit),
+        }
+    }
+}
+
+impl CardBeforeBidding {
+    pub fn try_create(name: &str) -> Option<CardBeforeBidding> {
+        let (rank_name, suit_name) = name.split_at(name.len() - 1);
+        match Rank::try_create(rank_name) {
+            Some(rank) => match Suit::try_create(suit_name) {
+                Some(suit) => Some(CardBeforeBidding { rank, suit }),
+                None => None,
+            },
+            None => None,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Card {
@@ -28,34 +72,24 @@ impl fmt::Display for Card {
 }
 
 impl Card {
-    pub fn try_create(name: &str) -> Option<Card> {
-        let (rank_name, suit_name) = name.split_at(name.len() - 1);
-        match RankWithBowers::try_create(rank_name) {
-            Some(rank) => match Suit::try_create(suit_name) {
-                Some(suit) => Some(Card { rank, suit }),
-                None => None,
-            },
-            None => None,
-        }
-    }
-
-    pub fn update_bowers(cards: &mut Vec<Card>, trump: &Suit) -> () {
-        for card in cards.iter_mut() {
-            if card.rank != RankWithBowers::Jack {
-                continue;
-            }
-            if card.suit == *trump {
-                *card = Card {
+    pub fn update_bowers(cards: Vec<CardBeforeBidding>, &trump: &Suit) -> Vec<Card> {
+        cards
+            .into_iter()
+            .map(|card| match card.rank {
+                Rank::Jack if card.suit == trump => Card {
+                    suit: trump,
                     rank: RankWithBowers::RightBower,
-                    suit: *trump,
-                };
-            } else if card.suit.other_suit_of_same_color() == *trump {
-                *card = Card {
+                },
+                Rank::Jack if card.suit == trump.other_suit_of_same_color() => Card {
+                    suit: trump,
                     rank: RankWithBowers::LeftBower,
-                    suit: *trump,
-                };
-            }
-        }
+                },
+                rank => Card {
+                    suit: card.suit,
+                    rank: rank.into(),
+                },
+            })
+            .collect()
     }
 }
 
@@ -100,20 +134,18 @@ mod tests {
         card.to_string()
     }
 
-    #[test_case("9C" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Clubs}))]
-    #[test_case("9D" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Diamonds}))]
-    #[test_case("9H" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Hearts}))]
-    #[test_case("9S" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Spades}))]
-    #[test_case("NC" => Some(Card {rank:RankWithBowers::Nine, suit: Suit::Clubs}))]
-    #[test_case("10C" => Some(Card {rank:RankWithBowers::Ten, suit: Suit::Clubs}))]
-    #[test_case("TC" => Some(Card {rank:RankWithBowers::Ten, suit: Suit::Clubs}))]
-    #[test_case("JC" => Some(Card {rank:RankWithBowers::Jack, suit: Suit::Clubs}))]
-    #[test_case("QC" => Some(Card {rank:RankWithBowers::Queen, suit: Suit::Clubs}))]
-    #[test_case("KC" => Some(Card {rank:RankWithBowers::King, suit: Suit::Clubs}))]
-    #[test_case("AC" => Some(Card {rank:RankWithBowers::Ace, suit: Suit::Clubs}))]
-    #[test_case("LC" => Some(Card {rank:RankWithBowers::LeftBower, suit: Suit::Clubs}))]
-    #[test_case("RC" => Some(Card {rank:RankWithBowers::RightBower, suit: Suit::Clubs}))]
-    fn try_create(name: &str) -> Option<Card> {
-        Card::try_create(name)
+    #[test_case("9C" => Some(CardBeforeBidding {rank:Rank::Nine, suit: Suit::Clubs}))]
+    #[test_case("9D" => Some(CardBeforeBidding {rank:Rank::Nine, suit: Suit::Diamonds}))]
+    #[test_case("9H" => Some(CardBeforeBidding {rank:Rank::Nine, suit: Suit::Hearts}))]
+    #[test_case("9S" => Some(CardBeforeBidding {rank:Rank::Nine, suit: Suit::Spades}))]
+    #[test_case("NC" => Some(CardBeforeBidding {rank:Rank::Nine, suit: Suit::Clubs}))]
+    #[test_case("10C" => Some(CardBeforeBidding {rank:Rank::Ten, suit: Suit::Clubs}))]
+    #[test_case("TC" => Some(CardBeforeBidding {rank:Rank::Ten, suit: Suit::Clubs}))]
+    #[test_case("JC" => Some(CardBeforeBidding {rank:Rank::Jack, suit: Suit::Clubs}))]
+    #[test_case("QC" => Some(CardBeforeBidding {rank:Rank::Queen, suit: Suit::Clubs}))]
+    #[test_case("KC" => Some(CardBeforeBidding {rank:Rank::King, suit: Suit::Clubs}))]
+    #[test_case("AC" => Some(CardBeforeBidding {rank:Rank::Ace, suit: Suit::Clubs}))]
+    fn try_create(name: &str) -> Option<CardBeforeBidding> {
+        CardBeforeBidding::try_create(name)
     }
 }

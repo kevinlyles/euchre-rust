@@ -1,4 +1,10 @@
-use crate::{card::Card, hand::Hand, player::Player, position::Position, suit::Suit};
+use crate::{
+    card::{Card, CardBeforeBidding},
+    hand::{Hand, HandBeforeBidding},
+    player::Player,
+    position::Position,
+    suit::Suit,
+};
 
 #[derive(Clone)]
 pub(crate) struct Wrapper<'a> {
@@ -23,15 +29,20 @@ impl<'a> Wrapper<'a> {
 }
 
 impl Player for Wrapper<'_> {
-    fn should_order_up(&mut self, hand: &Hand, dealer: &Position, trump_candidate: &Card) -> bool {
+    fn should_order_up(
+        &mut self,
+        hand: &HandBeforeBidding,
+        dealer: &Position,
+        trump_candidate: &CardBeforeBidding,
+    ) -> bool {
         self.bidder.should_order_up(hand, dealer, trump_candidate)
     }
 
     fn should_order_up_alone(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         dealer: &Position,
-        trump_candidate: &Card,
+        trump_candidate: &CardBeforeBidding,
     ) -> bool {
         self.bidder
             .should_order_up_alone(hand, dealer, trump_candidate)
@@ -39,24 +50,29 @@ impl Player for Wrapper<'_> {
 
     fn should_defend_alone_ordered(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         dealer: &Position,
-        trump_candidate: &Card,
+        trump_candidate: &CardBeforeBidding,
     ) -> bool {
         self.bidder
             .should_defend_alone_ordered(hand, dealer, trump_candidate)
     }
 
-    fn call_trump(&mut self, hand: &Hand, dealer: &Position, turned_down: &Card) -> Option<Suit> {
+    fn call_trump(
+        &mut self,
+        hand: &HandBeforeBidding,
+        dealer: &Position,
+        turned_down: &CardBeforeBidding,
+    ) -> Option<Suit> {
         self.bidder.call_trump(hand, dealer, turned_down)
     }
 
     fn should_call_alone(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         dealer: &Position,
         trump: &Suit,
-        turned_down: &Card,
+        turned_down: &CardBeforeBidding,
     ) -> bool {
         self.bidder
             .should_call_alone(hand, dealer, trump, turned_down)
@@ -64,16 +80,16 @@ impl Player for Wrapper<'_> {
 
     fn should_defend_alone_called(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         dealer: &Position,
         trump: &Suit,
-        turned_down: &Card,
+        turned_down: &CardBeforeBidding,
     ) -> bool {
         self.bidder
             .should_defend_alone_called(hand, dealer, trump, turned_down)
     }
 
-    fn choose_discard(&mut self, hand: &Hand, trump: &Suit) -> Card {
+    fn choose_discard(&mut self, hand: &HandBeforeBidding, trump: &Suit) -> CardBeforeBidding {
         self.player.choose_discard(hand, trump)
     }
 

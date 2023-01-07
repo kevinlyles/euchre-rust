@@ -15,9 +15,9 @@
 #![warn(variant_size_differences)]
 
 use bid_result::BidResultCalled;
-use card::Card;
+use card::CardBeforeBidding;
 use game_state::GameState;
-use hand::Hand;
+use hand::HandBeforeBidding;
 use hand_state::HandState;
 use log::LevelFilter;
 use logger::Logger;
@@ -98,8 +98,8 @@ fn main() {
 fn process_args(
     args: Vec<String>,
 ) -> (
-    Hand,
-    Card,
+    HandBeforeBidding,
+    CardBeforeBidding,
     Position,
     PreprogrammedBidder,
     BidResultCalled,
@@ -110,7 +110,7 @@ fn process_args(
         .skip_while(|arg| arg != "--simulate-hand")
         .skip(1)
         .collect();
-    let mut hand = Hand { cards: Vec::new() };
+    let mut hand = HandBeforeBidding { cards: Vec::new() };
     let mut trump_candidate = None;
     let mut dealer = None;
     let mut order_up = false;
@@ -123,7 +123,7 @@ fn process_args(
             "--trump-candidate"
                 if matches!(trump_candidate, None) && i + 1 < simulate_args.len() =>
             {
-                match Card::try_create(simulate_args[i + 1].as_str()) {
+                match CardBeforeBidding::try_create(simulate_args[i + 1].as_str()) {
                     Some(card) => trump_candidate = Some(card),
                     None => panic!("Invalid card: {}", simulate_args[i + 1]),
                 };
@@ -153,7 +153,7 @@ fn process_args(
             }
             "--go-alone" if go_alone == false => go_alone = true,
             "--ignore-other-bids" => ignore_other_bids = true,
-            card => match Card::try_create(card) {
+            card => match CardBeforeBidding::try_create(card) {
                 Some(card) => hand.cards.push(card),
                 None => panic!("Invalid card: {}", card),
             },

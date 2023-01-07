@@ -1,4 +1,7 @@
-use crate::{bid_result::BidResultAll, card::Card, hand::Hand, player::Player, position::Position};
+use crate::{
+    bid_result::BidResultAll, card::CardBeforeBidding, hand::HandBeforeBidding, player::Player,
+    position::Position,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct BidState {
@@ -9,41 +12,41 @@ pub(crate) struct BidState {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum BidPhase {
     FirstRoundFirstPlayer {
-        trump_candidate: Card,
+        trump_candidate: CardBeforeBidding,
     },
     FirstRoundSecondPlayer {
-        trump_candidate: Card,
+        trump_candidate: CardBeforeBidding,
     },
     FirstRoundThirdPlayer {
-        trump_candidate: Card,
+        trump_candidate: CardBeforeBidding,
     },
     FirstRoundFourthPlayer {
-        trump_candidate: Card,
+        trump_candidate: CardBeforeBidding,
     },
     OrderedUp {
         caller: Position,
-        card_ordered: Card,
+        card_ordered: CardBeforeBidding,
     },
     OrderedUpAlone {
         caller: Position,
-        card_ordered: Card,
+        card_ordered: CardBeforeBidding,
     },
     OrderedUpDefendedAlone {
         caller: Position,
-        card_ordered: Card,
+        card_ordered: CardBeforeBidding,
         defender: Position,
     },
     SecondRoundFirstPlayer {
-        turned_down: Card,
+        turned_down: CardBeforeBidding,
     },
     SecondRoundSecondPlayer {
-        turned_down: Card,
+        turned_down: CardBeforeBidding,
     },
     SecondRoundThirdPlayer {
-        turned_down: Card,
+        turned_down: CardBeforeBidding,
     },
     SecondRoundFourthPlayer {
-        turned_down: Card,
+        turned_down: CardBeforeBidding,
     },
     Done {
         bid_result: BidResultAll,
@@ -51,7 +54,7 @@ pub(crate) enum BidPhase {
 }
 
 impl BidState {
-    pub(crate) fn create(dealer: Position, trump_candidate: Card) -> BidState {
+    pub(crate) fn create(dealer: Position, trump_candidate: CardBeforeBidding) -> BidState {
         BidState {
             dealer,
             phase: BidPhase::FirstRoundFirstPlayer { trump_candidate },
@@ -61,7 +64,7 @@ impl BidState {
     pub(crate) fn step(
         &mut self,
         players: &mut [impl Player; 4],
-        hands: &mut [Hand; 4],
+        hands: &mut [HandBeforeBidding; 4],
     ) -> Option<BidResultAll> {
         match &mut self.phase {
             BidPhase::FirstRoundFirstPlayer {
@@ -215,9 +218,9 @@ impl BidState {
     fn order_up(
         dealer: &Position,
         bidder: Position,
-        trump_candidate: &Card,
+        trump_candidate: &CardBeforeBidding,
         players: &mut [impl Player; 4],
-        hands: &[Hand; 4],
+        hands: &[HandBeforeBidding; 4],
     ) -> Option<BidPhase> {
         let bidder_index = bidder.index();
         if !players[bidder_index].should_order_up(&hands[bidder_index], dealer, trump_candidate) {
@@ -268,7 +271,11 @@ impl BidState {
         }
     }
 
-    fn discard(dealer: &mut impl Player, hand: &mut Hand, card_ordered: Card) -> () {
+    fn discard(
+        dealer: &mut impl Player,
+        hand: &mut HandBeforeBidding,
+        card_ordered: CardBeforeBidding,
+    ) -> () {
         hand.cards.push(card_ordered);
         let mut discard = dealer.choose_discard(&hand, &card_ordered.suit);
         if !hand.cards.contains(&discard) {
@@ -281,8 +288,8 @@ impl BidState {
         dealer: &Position,
         bidder: Position,
         players: &mut [impl Player; 4],
-        hands: &[Hand; 4],
-        turned_down: &Card,
+        hands: &[HandBeforeBidding; 4],
+        turned_down: &CardBeforeBidding,
     ) -> Option<BidResultAll> {
         match players[bidder.index()].call_trump(&hands[bidder.index()], &dealer, turned_down) {
             Some(trump) if trump != turned_down.suit => {
@@ -339,17 +346,14 @@ impl BidState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        players::preprogrammed_bidder::PreprogrammedBidder, rank_with_bowers::RankWithBowers,
-        suit::Suit,
-    };
+    use crate::{players::preprogrammed_bidder::PreprogrammedBidder, rank::Rank, suit::Suit};
 
     #[test]
     fn everyone_passes() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let turned_down = trump_candidate.clone();
         let mut players = make_players();
@@ -380,16 +384,16 @@ mod tests {
     #[test]
     fn ordered_up_only_allows_valid_discards() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
         let card_ordered = trump_candidate.clone();
         let mut players = make_players();
-        players[dealer.index()] = PreprogrammedBidder::discards(Card {
+        players[dealer.index()] = PreprogrammedBidder::discards(CardBeforeBidding {
             suit: Suit::Spades,
-            rank: RankWithBowers::Nine,
+            rank: Rank::Nine,
         });
         let caller = Position::South;
         players[caller.index()] = PreprogrammedBidder::orders_up();
@@ -419,9 +423,9 @@ mod tests {
     #[test]
     fn ordered_up() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
         let card_ordered = trump_candidate.clone();
@@ -453,9 +457,9 @@ mod tests {
     #[test]
     fn ordered_up_alone() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let card_ordered = trump_candidate.clone();
         let mut players = make_players();
@@ -489,9 +493,9 @@ mod tests {
     #[test]
     fn ordered_up_defended_alone_first_opponent() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
         let card_ordered = trump_candidate.clone();
@@ -531,9 +535,9 @@ mod tests {
     #[test]
     fn ordered_up_defended_alone_second_opponent() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
         let card_ordered = trump_candidate.clone();
@@ -572,9 +576,9 @@ mod tests {
     #[test]
     fn called_requires_new_suit() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let turned_down = trump_candidate.clone();
         let mut players = make_players();
@@ -607,9 +611,9 @@ mod tests {
     #[test]
     fn called() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let turned_down = trump_candidate.clone();
         let trump = Suit::Spades;
@@ -641,9 +645,9 @@ mod tests {
     #[test]
     fn called_alone() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let turned_down = trump_candidate.clone();
         let trump = Suit::Spades;
@@ -675,9 +679,9 @@ mod tests {
     #[test]
     fn called_defended_alone_first_opponent() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let turned_down = trump_candidate.clone();
         let trump = Suit::Spades;
@@ -716,9 +720,9 @@ mod tests {
     #[test]
     fn called_defended_alone_second_opponent() {
         let dealer = Position::North;
-        let trump_candidate = Card {
+        let trump_candidate = CardBeforeBidding {
             suit: Suit::Hearts,
-            rank: RankWithBowers::Ace,
+            rank: Rank::Ace,
         };
         let turned_down = trump_candidate.clone();
         let trump = Suit::Spades;
@@ -762,29 +766,29 @@ mod tests {
         ]
     }
 
-    fn make_hands() -> [Hand; 4] {
+    fn make_hands() -> [HandBeforeBidding; 4] {
         [
-            Hand {
-                cards: vec![Card {
-                    rank: RankWithBowers::King,
+            HandBeforeBidding {
+                cards: vec![CardBeforeBidding {
+                    rank: Rank::King,
                     suit: Suit::Spades,
                 }],
             },
-            Hand {
-                cards: vec![Card {
-                    rank: RankWithBowers::King,
+            HandBeforeBidding {
+                cards: vec![CardBeforeBidding {
+                    rank: Rank::King,
                     suit: Suit::Hearts,
                 }],
             },
-            Hand {
-                cards: vec![Card {
-                    rank: RankWithBowers::King,
+            HandBeforeBidding {
+                cards: vec![CardBeforeBidding {
+                    rank: Rank::King,
                     suit: Suit::Diamonds,
                 }],
             },
-            Hand {
-                cards: vec![Card {
-                    rank: RankWithBowers::King,
+            HandBeforeBidding {
+                cards: vec![CardBeforeBidding {
+                    rank: Rank::King,
                     suit: Suit::Clubs,
                 }],
             },
@@ -793,9 +797,9 @@ mod tests {
 
     fn check_sequence(
         dealer: Position,
-        trump_candidate: Card,
+        trump_candidate: CardBeforeBidding,
         players: &mut [impl Player; 4],
-        hands: &mut [Hand; 4],
+        hands: &mut [HandBeforeBidding; 4],
         expected_results: &[BidPhase],
         expected_return_value: BidResultAll,
     ) {

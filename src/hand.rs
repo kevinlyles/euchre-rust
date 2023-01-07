@@ -1,12 +1,22 @@
-use crate::{card::Card, suit::Suit};
+use crate::{
+    card::{Card, CardBeforeBidding},
+    suit::Suit,
+};
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct HandBeforeBidding {
+    pub cards: Vec<CardBeforeBidding>,
+}
+
+impl HandBeforeBidding {
+    pub fn update_bowers(hand: HandBeforeBidding, trump: &Suit) -> Hand {
+        Hand {
+            cards: Card::update_bowers(hand.cards, trump),
+        }
+    }
+}
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Hand {
     pub cards: Vec<Card>,
-}
-
-impl Hand {
-    pub fn update_bowers(hand: &mut Hand, trump: &Suit) -> () {
-        Card::update_bowers(&mut hand.cards, trump);
-    }
 }

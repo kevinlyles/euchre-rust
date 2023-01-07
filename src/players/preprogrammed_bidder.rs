@@ -1,4 +1,7 @@
-use crate::{card::Card, hand::Hand, player::Player, position::Position, suit::Suit};
+use crate::{
+    card::CardBeforeBidding, hand::HandBeforeBidding, player::Player, position::Position,
+    suit::Suit,
+};
 
 #[derive(Clone)]
 pub(crate) struct PreprogrammedBidder {
@@ -7,7 +10,7 @@ pub(crate) struct PreprogrammedBidder {
     defend_alone: bool,
     trump_to_call: Option<Suit>,
     call_alone: bool,
-    card_to_discard: Option<Card>,
+    card_to_discard: Option<CardBeforeBidding>,
 }
 
 impl PreprogrammedBidder {
@@ -78,7 +81,7 @@ impl PreprogrammedBidder {
         }
     }
 
-    pub(crate) fn discards(card: Card) -> PreprogrammedBidder {
+    pub(crate) fn discards(card: CardBeforeBidding) -> PreprogrammedBidder {
         #![allow(unused)]
         PreprogrammedBidder {
             order_up: false,
@@ -94,61 +97,61 @@ impl PreprogrammedBidder {
 impl Player for PreprogrammedBidder {
     fn should_order_up(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
-        _trump_candidate: &Card,
+        _trump_candidate: &CardBeforeBidding,
     ) -> bool {
         self.order_up
     }
 
     fn should_order_up_alone(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
-        _trump_candidate: &Card,
+        _trump_candidate: &CardBeforeBidding,
     ) -> bool {
         self.order_up_alone
     }
 
     fn should_defend_alone_ordered(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
-        _trump_candidate: &Card,
+        _trump_candidate: &CardBeforeBidding,
     ) -> bool {
         self.defend_alone
     }
 
     fn call_trump(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
-        _turned_down: &Card,
+        _turned_down: &CardBeforeBidding,
     ) -> Option<Suit> {
         self.trump_to_call
     }
 
     fn should_call_alone(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
         _trump: &Suit,
-        _turned_down: &Card,
+        _turned_down: &CardBeforeBidding,
     ) -> bool {
         self.call_alone
     }
 
     fn should_defend_alone_called(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
         _trump: &Suit,
-        _turned_down: &Card,
+        _turned_down: &CardBeforeBidding,
     ) -> bool {
         self.defend_alone
     }
 
-    fn choose_discard(&mut self, hand: &Hand, _trump: &Suit) -> Card {
+    fn choose_discard(&mut self, hand: &HandBeforeBidding, _trump: &Suit) -> CardBeforeBidding {
         match self.card_to_discard {
             Some(card) => card,
             None => hand.cards[0],

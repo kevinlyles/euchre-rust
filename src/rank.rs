@@ -1,6 +1,8 @@
 use core::fmt;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+use enum_iterator::IntoEnumIterator;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, IntoEnumIterator, PartialOrd, Ord)]
 pub enum Rank {
     Ace = 14,
     King = 13,
@@ -11,6 +13,18 @@ pub enum Rank {
 }
 
 impl Rank {
+    pub fn try_create(name: &str) -> Option<Rank> {
+        match name {
+            "A" => Some(Self::Ace),
+            "K" => Some(Self::King),
+            "Q" => Some(Self::Queen),
+            "J" => Some(Self::Jack),
+            "10" | "T" => Some(Self::Ten),
+            "9" | "N" => Some(Self::Nine),
+            _ => None,
+        }
+    }
+
     pub fn offset_for_unicode_card(&self) -> u32 {
         match self {
             Self::Ace => 0x1,

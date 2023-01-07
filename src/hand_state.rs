@@ -6,9 +6,9 @@ use rayon::{
 use crate::{
     bid_result::{BidResultAll, BidResultCalled},
     bid_state::BidState,
-    card::Card,
+    card::CardBeforeBidding,
     deck::Deck,
-    hand::Hand,
+    hand::{Hand, HandBeforeBidding},
     hands_iterator::{CardLocation, HandsIterator},
     player::Player,
     position::Position,
@@ -19,7 +19,6 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct HandState {
     pub(crate) dealer: Position,
-    hands: [Hand; 4],
     pub(crate) phase: HandPhase,
 }
 
@@ -27,28 +26,34 @@ pub(crate) struct HandState {
 pub(crate) enum HandPhase {
     Bidding {
         bid_state: BidState,
+        hands: [HandBeforeBidding; 4],
     },
     FirstTrick {
         bid_result: BidResultCalled,
+        hands: [Hand; 4],
         trick_state: TrickState,
     },
     SecondTrick {
         bid_result: BidResultCalled,
+        hands: [Hand; 4],
         trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     ThirdTrick {
         bid_result: BidResultCalled,
+        hands: [Hand; 4],
         trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     FourthTrick {
         bid_result: BidResultCalled,
+        hands: [Hand; 4],
         trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
     FifthTrick {
         bid_result: BidResultCalled,
+        hands: [Hand; 4],
         trick_state: TrickState,
         tricks_taken: [u8; 4],
     },
@@ -59,11 +64,15 @@ pub(crate) enum HandPhase {
 }
 
 impl HandState {
-    pub(crate) fn create(dealer: Position, trump_candidate: Card, hands: [Hand; 4]) -> HandState {
+    pub(crate) fn create(
+        dealer: Position,
+        trump_candidate: CardBeforeBidding,
+        hands: [HandBeforeBidding; 4],
+    ) -> HandState {
         HandState {
             dealer,
-            hands,
             phase: HandPhase::Bidding {
+                hands,
                 bid_state: BidState::create(dealer, trump_candidate),
             },
         }
@@ -71,16 +80,29 @@ impl HandState {
 
     pub(crate) fn create_with_scenario(
         dealer: Position,
-        trump_candidate: Card,
-        my_hand: Hand,
+        trump_candidate: CardBeforeBidding,
+        my_hand: HandBeforeBidding,
     ) -> MapWith<
         IterBridge<HandsIterator>,
-        (Position, Card, Hand, [Card; 18]),
-        impl Fn(&mut (Position, Card, Hand, [Card; 18]), [CardLocation; 18]) -> HandState,
+        (
+            Position,
+            CardBeforeBidding,
+            HandBeforeBidding,
+            [CardBeforeBidding; 18],
+        ),
+        impl Fn(
+            &mut (
+                Position,
+                CardBeforeBidding,
+                HandBeforeBidding,
+                [CardBeforeBidding; 18],
+            ),
+            [CardLocation; 18],
+        ) -> HandState,
     > {
         let my_hand = my_hand.clone();
         let mut available_cards = Deck::create_all_cards();
-        available_cards.retain(|&card| card != trump_candidate && !my_hand.cards.contains(&card));
+        available_cards.retain(|&card| trump_candidate != card && !my_hand.cards.contains(&card));
         let available_cards = available_cards.try_into().unwrap();
         HandsIterator::create().par_bridge().map_with(
             (dealer, trump_candidate, my_hand, available_cards),
@@ -95,19 +117,19 @@ impl HandState {
     }
 
     fn generate_hands(
-        my_hand: &Hand,
-        available_cards: &[Card; 18],
+        my_hand: &HandBeforeBidding,
+        available_cards: &[CardBeforeBidding; 18],
         permutation: [CardLocation; 18],
-    ) -> [Hand; 4] {
+    ) -> [HandBeforeBidding; 4] {
         let mut hands = [
-            Hand {
+            HandBeforeBidding {
                 cards: Vec::with_capacity(6),
             },
-            Hand {
+            HandBeforeBidding {
                 cards: Vec::with_capacity(6),
             },
             my_hand.clone(),
-            Hand {
+            HandBeforeBidding {
                 cards: Vec::with_capacity(6),
             },
         ];
@@ -124,19 +146,22 @@ impl HandState {
 
     pub(crate) fn step(&mut self, players: &mut [impl Player; 4]) -> Option<(Position, u8)> {
         match &mut self.phase {
-            HandPhase::Bidding { bid_state } => {
-                match bid_state.step(players, &mut self.hands) {
+            HandPhase::Bidding { bid_state, hands } => {
+                match bid_state.step(players, hands) {
                     Some(bid_result) => {
                         self.phase = match bid_result {
                             BidResultAll::Called { .. }
                             | BidResultAll::CalledAlone { .. }
                             | BidResultAll::DefendedAlone { .. } => {
                                 let bid_result: BidResultCalled = bid_result.try_into().unwrap();
-                                HandState::update_bowers(&mut self.hands, &bid_result.trump());
                                 HandPhase::FirstTrick {
                                     trick_state: TrickState::create(
                                         bid_result.clone(),
                                         self.dealer.next_position_playing(&bid_result),
+                                    ),
+                                    hands: HandState::update_bowers(
+                                        hands.clone(),
+                                        &bid_result.trump(),
                                     ),
                                     bid_result,
                                 }
@@ -153,15 +178,17 @@ impl HandState {
             }
             HandPhase::FirstTrick {
                 bid_result,
+                hands,
                 trick_state,
             } => {
-                match trick_state.step(players, &mut self.hands) {
+                match trick_state.step(players, hands) {
                     Some(trick_winner) => {
                         let mut tricks_taken = [0; 4];
                         tricks_taken[trick_winner.index()] += 1;
                         self.phase = HandPhase::SecondTrick {
                             bid_result: bid_result.clone(),
                             trick_state: TrickState::create(bid_result.clone(), trick_winner),
+                            hands: hands.clone(),
                             tricks_taken,
                         }
                     }
@@ -171,14 +198,16 @@ impl HandState {
             }
             HandPhase::SecondTrick {
                 bid_result,
+                hands,
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, &mut self.hands) {
+                match trick_state.step(players, hands) {
                     Some(trick_winner) => {
                         tricks_taken[trick_winner.index()] += 1;
                         self.phase = HandPhase::ThirdTrick {
                             bid_result: bid_result.clone(),
+                            hands: hands.clone(),
                             trick_state: TrickState::create(bid_result.clone(), trick_winner),
                             tricks_taken: *tricks_taken,
                         }
@@ -189,14 +218,16 @@ impl HandState {
             }
             HandPhase::ThirdTrick {
                 bid_result,
+                hands,
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, &mut self.hands) {
+                match trick_state.step(players, hands) {
                     Some(trick_winner) => {
                         tricks_taken[trick_winner.index()] += 1;
                         self.phase = HandPhase::FourthTrick {
                             bid_result: bid_result.clone(),
+                            hands: hands.clone(),
                             trick_state: TrickState::create(bid_result.clone(), trick_winner),
                             tricks_taken: *tricks_taken,
                         }
@@ -207,14 +238,16 @@ impl HandState {
             }
             HandPhase::FourthTrick {
                 bid_result,
+                hands,
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, &mut self.hands) {
+                match trick_state.step(players, hands) {
                     Some(trick_winner) => {
                         tricks_taken[trick_winner.index()] += 1;
                         self.phase = HandPhase::FifthTrick {
                             bid_result: bid_result.clone(),
+                            hands: hands.clone(),
                             trick_state: TrickState::create(bid_result.clone(), trick_winner),
                             tricks_taken: *tricks_taken,
                         }
@@ -225,10 +258,11 @@ impl HandState {
             }
             HandPhase::FifthTrick {
                 bid_result,
+                hands,
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, &mut self.hands) {
+                match trick_state.step(players, hands) {
                     Some(trick_winner) => {
                         tricks_taken[trick_winner.index()] += 1;
                         self.phase = HandPhase::Scoring {
@@ -271,10 +305,13 @@ impl HandState {
         }
     }
 
-    fn update_bowers(hands: &mut [Hand; 4], trump: &Suit) -> () {
-        for hand in hands.iter_mut() {
-            Hand::update_bowers(hand, trump);
-        }
+    fn update_bowers(hands: [HandBeforeBidding; 4], trump: &Suit) -> [Hand; 4] {
+        hands
+            .into_iter()
+            .map(|hand| HandBeforeBidding::update_bowers(hand, trump))
+            .collect::<Vec<Hand>>()
+            .try_into()
+            .unwrap()
     }
 
     fn get_score(bid_result: &BidResultAll, tricks_taken: &[u8; 4]) -> (Position, u8) {

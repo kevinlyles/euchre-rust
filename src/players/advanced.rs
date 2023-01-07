@@ -1,7 +1,11 @@
 use enum_iterator::IntoEnumIterator;
 
 use crate::{
-    card::Card, hand::Hand, player::Player, position::Position, rank_with_bowers::RankWithBowers,
+    card::{Card, CardBeforeBidding},
+    hand::{Hand, HandBeforeBidding},
+    player::Player,
+    position::Position,
+    rank::Rank,
     suit::Suit,
 };
 
@@ -23,25 +27,26 @@ impl AdvancedPlayer {
 impl Player for AdvancedPlayer {
     fn should_order_up(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         &dealer: &Position,
-        &trump_candidate: &Card,
+        &trump_candidate: &CardBeforeBidding,
     ) -> bool {
         let to_me = self.position == dealer;
         let to_partner = self.position.partner() == dealer;
         let mut trump_cards = hand.cards.iter().filter(|card| {
             card.suit == trump_candidate.suit
-                || card.rank == RankWithBowers::Jack
+                || card.rank == Rank::Jack
                     && card.suit == trump_candidate.suit.other_suit_of_same_color()
         });
         match trump_cards.clone().count() + if to_me { 1 } else { 0 } {
             6 | 5 | 4 => true,
             3 if to_me || to_partner => true,
-            2 if trump_cards.any(|&card| {
-                card.suit == trump_candidate.suit && card.rank == RankWithBowers::Jack
-            }) && hand.cards.iter().any(|card| {
-                card.rank == RankWithBowers::Ace && card.suit != trump_candidate.suit
-            }) =>
+            2 if trump_cards
+                .any(|&card| card.suit == trump_candidate.suit && card.rank == Rank::Jack)
+                && hand
+                    .cards
+                    .iter()
+                    .any(|card| card.rank == Rank::Ace && card.suit != trump_candidate.suit) =>
             {
                 true
             }
@@ -51,14 +56,14 @@ impl Player for AdvancedPlayer {
 
     fn should_order_up_alone(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         &dealer: &Position,
-        trump_candidate: &Card,
+        trump_candidate: &CardBeforeBidding,
     ) -> bool {
         let to_me = self.position == dealer;
         let trump_cards = hand.cards.iter().filter(|card| {
             card.suit == trump_candidate.suit
-                || card.rank == RankWithBowers::Jack
+                || card.rank == Rank::Jack
                     && card.suit == trump_candidate.suit.other_suit_of_same_color()
         });
         match trump_cards.count() + if to_me { 1 } else { 0 } {
@@ -67,7 +72,12 @@ impl Player for AdvancedPlayer {
         }
     }
 
-    fn call_trump(&mut self, hand: &Hand, _dealer: &Position, _turned_down: &Card) -> Option<Suit> {
+    fn call_trump(
+        &mut self,
+        hand: &HandBeforeBidding,
+        _dealer: &Position,
+        _turned_down: &CardBeforeBidding,
+    ) -> Option<Suit> {
         if hand
             .cards
             .iter()
@@ -91,24 +101,23 @@ impl Player for AdvancedPlayer {
 
     fn should_defend_alone_ordered(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
-        _trump_candidate: &Card,
+        _trump_candidate: &CardBeforeBidding,
     ) -> bool {
         false
     }
 
     fn should_call_alone(
         &mut self,
-        hand: &Hand,
+        hand: &HandBeforeBidding,
         _dealer: &Position,
         &trump: &Suit,
-        _turned_down: &Card,
+        _turned_down: &CardBeforeBidding,
     ) -> bool {
         let trump_cards = hand.cards.iter().filter(|card| {
             card.suit == trump
-                || card.rank == RankWithBowers::Jack
-                    && card.suit == trump.other_suit_of_same_color()
+                || card.rank == Rank::Jack && card.suit == trump.other_suit_of_same_color()
         });
         match trump_cards.count() {
             5 => true,
@@ -118,21 +127,21 @@ impl Player for AdvancedPlayer {
 
     fn should_defend_alone_called(
         &mut self,
-        _hand: &Hand,
+        _hand: &HandBeforeBidding,
         _dealer: &Position,
         _trump: &Suit,
-        _turned_down: &Card,
+        _turned_down: &CardBeforeBidding,
     ) -> bool {
         false
     }
 
-    fn choose_discard(&mut self, hand: &Hand, trump: &Suit) -> Card {
+    fn choose_discard(&mut self, hand: &HandBeforeBidding, trump: &Suit) -> CardBeforeBidding {
         let mut suit_counts: [u8; 4] = [0; 4];
         let mut has_ace: [bool; 4] = [false; 4];
-        let mut lowest_cards: [Option<Card>; 4] = [None; 4];
+        let mut lowest_cards: [Option<CardBeforeBidding>; 4] = [None; 4];
         for &card in &hand.cards {
             suit_counts[card.suit as usize] += 1;
-            if card.rank == RankWithBowers::Ace {
+            if card.rank == Rank::Ace {
                 has_ace[card.suit as usize] = true;
             }
             match lowest_cards[card.suit as usize] {
@@ -143,13 +152,13 @@ impl Player for AdvancedPlayer {
 
         fn get_discard<F>(
             &trump: &Suit,
-            lowest_cards: &[Option<Card>; 4],
+            lowest_cards: &[Option<CardBeforeBidding>; 4],
             filter: F,
-        ) -> Option<Card>
+        ) -> Option<CardBeforeBidding>
         where
             F: Fn(Suit) -> bool,
         {
-            let mut lowest_card: Option<Card> = None;
+            let mut lowest_card: Option<CardBeforeBidding> = None;
 
             for suit in Suit::into_enum_iter().filter(|&suit| suit != trump) {
                 match lowest_cards[suit as usize] {
@@ -208,7 +217,6 @@ mod tests {
     use crate::{
         bid_result::BidResultAll,
         bid_state::BidState,
-        card::Card,
         players::{preprogrammed_bidder::PreprogrammedBidder, wrapper::Wrapper},
         suit::Suit,
     };
@@ -219,33 +227,33 @@ mod tests {
     fn test_cases() {
         test_bidding(
             "All nines and tens, dealer, candidate trump matches",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::South,
             false,
@@ -256,33 +264,33 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off king, off king, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::West,
             false,
@@ -293,39 +301,39 @@ mod tests {
 
         test_bidding(
             "Right, off ace, off jack ten nine, dealer, candidate trump matches",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Nine,
+                rank: Rank::Nine,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Nine,
+                rank: Rank::Nine,
             }),
             None,
             false,
@@ -333,39 +341,39 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off ten nine, dealer, candidate trump matches",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Nine,
+                rank: Rank::Nine,
             }),
             None,
             false,
@@ -373,39 +381,39 @@ mod tests {
 
         test_bidding(
             "Right, off ace, off jack ten nine, dealer, candidate trump matches",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Nine,
+                rank: Rank::Nine,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Nine,
+                rank: Rank::Nine,
             }),
             None,
             false,
@@ -413,33 +421,33 @@ mod tests {
 
         test_bidding(
             "Perfect hand, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Ace,
+                rank: Rank::Ace,
             },
             Position::West,
             false,
@@ -450,33 +458,33 @@ mod tests {
 
         test_bidding(
             "Right king queen, two off queens, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Ace,
+                rank: Rank::Ace,
             },
             Position::West,
             false,
@@ -487,33 +495,33 @@ mod tests {
 
         test_bidding(
             "Right left king, off king nine, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Ace,
+                rank: Rank::Ace,
             },
             Position::West,
             false,
@@ -524,33 +532,33 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off ten nine, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::West,
             false,
@@ -561,39 +569,39 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off king queen, dealer, candidate trump is ten",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Hearts,
-                rank: RankWithBowers::Queen,
+                rank: Rank::Queen,
             }),
             None,
             false,
@@ -601,39 +609,39 @@ mod tests {
 
         test_bidding(
             "Right left, off ace, off king queen, dealer, candidate trump is nine",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Hearts,
-                rank: RankWithBowers::Queen,
+                rank: Rank::Queen,
             }),
             None,
             true,
@@ -641,33 +649,33 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off ten nine, candidate trump matches but goes to opponents",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::West,
             false,
@@ -678,33 +686,33 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off ten nine, candidate trump matches and goes to partner",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::North,
             true,
@@ -715,33 +723,33 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off ace, off nine, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Ace,
+                rank: Rank::Ace,
             },
             Position::West,
             false,
@@ -752,33 +760,33 @@ mod tests {
 
         test_bidding(
             "Perfect hand, candidate trump matches",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::West,
             true,
@@ -789,33 +797,33 @@ mod tests {
 
         test_bidding(
             "Right left ace, off ace king, follow dealer, other suit is better",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::East,
             false,
@@ -826,33 +834,33 @@ mod tests {
 
         test_bidding(
             "Right left ace, off ace king, second after dealer, other suit is better",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::North,
             true,
@@ -863,14 +871,14 @@ mod tests {
 
         test_bidding(
             "Right nine, off ace, off king, off king, candidate trump does not match but makes one of the off kings good",
-            Hand {cards:vec![
-                Card{suit:Suit::Spades, rank:RankWithBowers::Jack},
-                Card{suit:Suit::Spades, rank:RankWithBowers::Nine},
-                Card{suit:Suit::Clubs, rank:RankWithBowers::Ace},
-                Card{suit:Suit::Diamonds, rank:RankWithBowers::King},
-                Card{suit:Suit::Hearts, rank:RankWithBowers::King},
+            HandBeforeBidding {cards:vec![
+                CardBeforeBidding{suit:Suit::Spades, rank:Rank::Jack},
+                CardBeforeBidding{suit:Suit::Spades, rank:Rank::Nine},
+                CardBeforeBidding{suit:Suit::Clubs, rank:Rank::Ace},
+                CardBeforeBidding{suit:Suit::Diamonds, rank:Rank::King},
+                CardBeforeBidding{suit:Suit::Hearts, rank:Rank::King},
             ]},
-            Card{suit:Suit::Diamonds, rank:RankWithBowers::Ace},
+            CardBeforeBidding{suit:Suit::Diamonds, rank:Rank::Ace},
             Position::West,
             false,
             None,
@@ -880,33 +888,33 @@ mod tests {
 
         test_bidding(
             "King queen ten nine, off nine, candidate trump does not match",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Nine,
+                        rank: Rank::Nine,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Ace,
+                rank: Rank::Ace,
             },
             Position::West,
             false,
@@ -917,39 +925,39 @@ mod tests {
 
         test_bidding(
             "Perfect hand, candidate trump matches, dealer",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             }),
             None,
             true,
@@ -957,39 +965,39 @@ mod tests {
 
         test_bidding(
             "Perfect hand after picking it up, candidate trump matches, dealer",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Queen,
+                rank: Rank::Queen,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Diamonds,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             }),
             None,
             true,
@@ -997,39 +1005,39 @@ mod tests {
 
         test_bidding(
             "Right left ace, off queen, off ten, candidate trump matches, dealer",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Diamonds,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Ten,
+                        rank: Rank::Ten,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Hearts,
-                rank: RankWithBowers::Ten,
+                rank: Rank::Ten,
             }),
             None,
             false,
@@ -1037,56 +1045,56 @@ mod tests {
 
         test_bidding(
             "Right left ace, off queen, off ten, candidate trump matches, dealer (other order of offsuits)",
-            Hand {cards:vec![
-                Card{suit:Suit::Spades, rank:RankWithBowers::Jack},
-                Card{suit:Suit::Clubs, rank:RankWithBowers::Jack},
-                Card{suit:Suit::Spades, rank:RankWithBowers::Ace},
-                Card{suit:Suit::Hearts, rank:RankWithBowers::Queen},
-                Card{suit:Suit::Diamonds, rank:RankWithBowers::Ten},
+            HandBeforeBidding {cards:vec![
+                CardBeforeBidding{suit:Suit::Spades, rank:Rank::Jack},
+                CardBeforeBidding{suit:Suit::Clubs, rank:Rank::Jack},
+                CardBeforeBidding{suit:Suit::Spades, rank:Rank::Ace},
+                CardBeforeBidding{suit:Suit::Hearts, rank:Rank::Queen},
+                CardBeforeBidding{suit:Suit::Diamonds, rank:Rank::Ten},
             ]},
-            Card{suit:Suit::Spades, rank:RankWithBowers::King},
+            CardBeforeBidding{suit:Suit::Spades, rank:Rank::King},
             Position::South,
             true,
-            Some(Card{suit:Suit::Diamonds, rank:RankWithBowers::Ten}),
+            Some(CardBeforeBidding{suit:Suit::Diamonds, rank:Rank::Ten}),
             None,
             false,
         );
 
         test_bidding(
             "Right left ace, off king queen, candidate trump matches, dealer",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::King,
+                rank: Rank::King,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Hearts,
-                rank: RankWithBowers::Queen,
+                rank: Rank::Queen,
             }),
             None,
             true,
@@ -1094,56 +1102,56 @@ mod tests {
 
         test_bidding(
             "Right left ace, off king queen, candidate trump matches, dealer (other order of offsuits)",
-            Hand {cards:vec![
-                Card{suit:Suit::Spades, rank:RankWithBowers::Jack},
-                Card{suit:Suit::Clubs, rank:RankWithBowers::Jack},
-                Card{suit:Suit::Spades, rank:RankWithBowers::Ace},
-                Card{suit:Suit::Hearts, rank:RankWithBowers::Queen},
-                Card{suit:Suit::Hearts, rank:RankWithBowers::King},
+            HandBeforeBidding {cards:vec![
+                CardBeforeBidding{suit:Suit::Spades, rank:Rank::Jack},
+                CardBeforeBidding{suit:Suit::Clubs, rank:Rank::Jack},
+                CardBeforeBidding{suit:Suit::Spades, rank:Rank::Ace},
+                CardBeforeBidding{suit:Suit::Hearts, rank:Rank::Queen},
+                CardBeforeBidding{suit:Suit::Hearts, rank:Rank::King},
             ]},
-            Card{suit:Suit::Spades, rank:RankWithBowers::King},
+            CardBeforeBidding{suit:Suit::Spades, rank:Rank::King},
             Position::South,
             true,
-            Some(Card{suit:Suit::Hearts, rank:RankWithBowers::Queen}),
+            Some(CardBeforeBidding{suit:Suit::Hearts, rank:Rank::Queen}),
             None,
             true,
         );
 
         test_bidding(
             "Right left ace king, off ace, candidate trump matches, dealer",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Clubs,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Spades,
-                rank: RankWithBowers::Queen,
+                rank: Rank::Queen,
             },
             Position::South,
             true,
-            Some(Card {
+            Some(CardBeforeBidding {
                 suit: Suit::Hearts,
-                rank: RankWithBowers::Ace,
+                rank: Rank::Ace,
             }),
             None,
             true,
@@ -1151,33 +1159,33 @@ mod tests {
 
         test_bidding(
             "Right ace king, off king queen, candidate trump is left, dealer",
-            Hand {
+            HandBeforeBidding {
                 cards: vec![
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Jack,
+                        rank: Rank::Jack,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::Ace,
+                        rank: Rank::Ace,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Spades,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::King,
+                        rank: Rank::King,
                     },
-                    Card {
+                    CardBeforeBidding {
                         suit: Suit::Hearts,
-                        rank: RankWithBowers::Queen,
+                        rank: Rank::Queen,
                     },
                 ],
             },
-            Card {
+            CardBeforeBidding {
                 suit: Suit::Clubs,
-                rank: RankWithBowers::Jack,
+                rank: Rank::Jack,
             },
             Position::East,
             false,
@@ -1189,11 +1197,11 @@ mod tests {
 
     fn test_bidding(
         description: &str,
-        hand: Hand,
-        trump_candidate: Card,
+        hand: HandBeforeBidding,
+        trump_candidate: CardBeforeBidding,
         dealer: Position,
         orders_up: bool,
-        discard: Option<Card>,
+        discard: Option<CardBeforeBidding>,
         calls_suit: Option<Suit>,
         goes_alone: bool,
     ) -> () {
@@ -1206,7 +1214,7 @@ mod tests {
         if discard.is_some() && orders_up && am_dealer {
             let mut found = hand.cards.contains(&discard.unwrap());
             if !found && orders_up && am_dealer {
-                found = trump_candidate == discard.unwrap();
+                found = trump_candidate == discard.unwrap().into();
             }
             assert!(
                 found,
@@ -1222,10 +1230,10 @@ mod tests {
 
         let ai: AdvancedPlayer;
         let mut hands = [
-            Hand { cards: Vec::new() },
-            Hand { cards: Vec::new() },
+            HandBeforeBidding { cards: Vec::new() },
+            HandBeforeBidding { cards: Vec::new() },
             hand,
-            Hand { cards: Vec::new() },
+            HandBeforeBidding { cards: Vec::new() },
         ];
         ai = AdvancedPlayer::create(Position::South);
         let mut players = [
