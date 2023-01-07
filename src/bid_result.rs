@@ -95,3 +95,24 @@ impl BidResultCalled {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    impl BidResultAll {
+        pub fn called(trump: &str) -> BidResultAll {
+            BidResultAll::Called {
+                trump: Suit::try_create(trump).unwrap(),
+                caller: Position::South,
+            }
+        }
+
+        pub fn alone(trump: &str) -> BidResultAll {
+            BidResultAll::CalledAlone {
+                trump: Suit::try_create(trump).unwrap(),
+                caller: Position::South,
+            }
+        }
+    }
+}

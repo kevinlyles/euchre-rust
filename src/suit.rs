@@ -2,7 +2,6 @@ use core::fmt;
 use enum_iterator::IntoEnumIterator;
 
 #[derive(Copy, Clone, Debug, IntoEnumIterator, PartialEq, Eq)]
-#[repr(usize)]
 pub enum Suit {
     Spades,
     Hearts,
@@ -18,6 +17,15 @@ impl Suit {
             "H" => Some(Self::Hearts),
             "S" => Some(Self::Spades),
             _ => None,
+        }
+    }
+
+    pub fn index(&self) -> usize {
+        match self {
+            Self::Spades => 0,
+            Self::Hearts => 1,
+            Self::Diamonds => 2,
+            Self::Clubs => 3,
         }
     }
 
