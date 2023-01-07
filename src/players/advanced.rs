@@ -160,7 +160,7 @@ impl Player for AdvancedPlayer {
         {
             let mut lowest_card: Option<CardBeforeBidding> = None;
 
-            for suit in Suit::into_enum_iter().filter(|&suit| suit != trump) {
+            for suit in Suit::into_enum_iter() {
                 match lowest_cards[suit as usize] {
                     Some(card) if filter(suit) => match lowest_card {
                         Some(lowest_card) if lowest_card.rank < card.rank => (),
@@ -174,11 +174,14 @@ impl Player for AdvancedPlayer {
         }
 
         if let Some(card) = get_discard(trump, &lowest_cards, |suit| {
-            suit_counts[suit as usize] == 1 && !has_ace[suit as usize]
+            suit != *trump && suit_counts[suit as usize] == 1 && !has_ace[suit as usize]
         }) {
             card
-        } else if let Some(card) = get_discard(trump, &lowest_cards, |suit| !has_ace[suit as usize])
-        {
+        } else if let Some(card) = get_discard(trump, &lowest_cards, |suit| {
+            suit != *trump && !has_ace[suit as usize]
+        }) {
+            card
+        } else if let Some(card) = get_discard(trump, &lowest_cards, |suit| suit != *trump) {
             card
         } else {
             get_discard(trump, &lowest_cards, |_| true).unwrap()
