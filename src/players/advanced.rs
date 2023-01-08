@@ -1345,25 +1345,26 @@ mod tests {
         BidResultAll::alone("S"), None ; "Perfect hand, call alone")]
     #[test_case(["JS", "KS", "QS", "QH", "QD"], "AD", Position::West,
         BidResultAll::called("S"), None ; "Right king queen 3 suited, call")]
+    #[test_case(["JS", "KS", "JC", "KH", "NH"], "AD", Position::West,
+        BidResultAll::alone("S"), None ; "Right left king, off king nine, call alone")]
     #[test_case(["JS", "NS", "AD", "TH", "NH"], "KD", Position::West,
-        BidResultAll::called("S"), None ; "Right left king 2 suited, call alone")]
-    //TODO: figure out what's up with these tests
-    #[test_case(["JS", "NS", "AC", "KH", "QH"], "TS", Position::South,
+        BidResultAll::called("S"), None ; "Right nine off ace 3 suited, call")]
+    #[test_case(["JS", "NS", "AD", "KH", "QH"], "TS", Position::South,
         BidResultAll::called("S"), Some("QH") ; "Right nine off ace 3 suited, pick up the ten (not alone)")]
     #[test_case(["JS", "JC", "AD", "KH", "QH"], "TS", Position::South,
-        BidResultAll::called("S"), Some("QH") ; "Right nine off ace 3 suited, pick up the ten (not alone again)")]
+        BidResultAll::alone("S"), Some("QH") ; "Right left off ace off king queen, pick up the ten alone")]
     #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::West,
-        BidResultAll::NoOneCalled, None ; "Right nine off ace, 3 suited, do not order to opponent")]
+        BidResultAll::NoOneCalled, None ; "Right nine off ace 3 suited, do not order to opponent")]
     #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::North,
         BidResultAll::called("S"), None ; "Right nine off ace 3 suited, order to partner")]
     #[test_case(["JS", "NS", "AC", "AH", "ND"], "AD", Position::West,
         BidResultAll::called("S"), None ; "Right nine 2 off aces 4 suited, call")]
     #[test_case(["JS", "AS", "KS", "QS", "JC"], "TS", Position::West,
-        BidResultAll::alone("S"), None ; "Perfect hand, order to opponent alone")]
+        BidResultAll::alone("S"), None ; "Perfect hand, candidate trump matches")]
     #[test_case(["JS", "AS", "JC", "AC", "KC"], "KS", Position::East,
-        BidResultAll::alone("C"), None ; "Right left ace, off ace king, left of dealer, wait for next suit")]
+        BidResultAll::alone("C"), None ; "Right left ace off ace king, follow dealer, wait for next (better) suit")]
     #[test_case(["JS", "AS", "JC", "AC", "KC"], "KS", Position::North,
-        BidResultAll::alone("S"), None ; "Right left ace, off ace king, opposite dealer, order up alone")]
+        BidResultAll::alone("S"), None ; "Right left ace off ace king, opposite dealer, order up alone")]
     #[test_case(["JS", "NS", "AC", "KD", "KH"], "AD", Position::West,
         BidResultAll::called("S"), None ; "Right nine off ace 3 suited, trump makes off king good, calls")]
     #[test_case(["KS", "QS", "TS", "NS", "NH"], "AD", Position::West,
@@ -1379,11 +1380,11 @@ mod tests {
     #[test_case(["JS", "JC", "AS", "KH", "QH"], "KS", Position::South,
         BidResultAll::alone("S"), Some("QH") ; "Right left ace off king queen, pick up the king alone")]
     #[test_case(["JS", "JC", "AS", "QH", "KH"], "KS", Position::South,
-        BidResultAll::alone("S"), Some("QH") ; "Right left ace off king queen, pick up the queen alone (other order)")]
+        BidResultAll::alone("S"), Some("QH") ; "Right left ace off king queen, pick up the king alone (other order)")]
     #[test_case(["JS", "JC", "AS", "KS", "AH"], "QS", Position::South,
         BidResultAll::alone("S"), Some("AH") ; "Right left ace king off ace, pick up the queen alone")]
     #[test_case(["JS", "AS", "KS", "KH", "QH"], "JC", Position::East,
-        BidResultAll::alone("S"), None ; "Right ace king, off king queen, pick up the left alone")]
+        BidResultAll::alone("S"), None ; "Right ace king, off king queen, call alone")]
     //TODO: test right nine 3 off aces
     //TODO: test not waiting for the next suit if the current one is better
     //TODO: better test logic around turned down card making things good
