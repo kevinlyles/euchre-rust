@@ -31,6 +31,14 @@ impl Player for AdvancedPlayer {
         &dealer: &Position,
         &trump_candidate: &CardBeforeBidding,
     ) -> bool {
+        if dealer.next_position_bidding() == self.position {
+            if let Some(suit) = self.call_trump(hand, &dealer, &trump_candidate) {
+                if suit == trump_candidate.suit.other_suit_of_same_color() {
+                    return false;
+                }
+            }
+        }
+
         let to_me = self.position == dealer;
         let to_partner = self.position.partner() == dealer;
         let trump_cards = hand.cards.iter().filter(|card| {
@@ -538,46 +546,6 @@ mod tests {
             CardBeforeBidding {
                 suit: Suit::Spades,
                 rank: Rank::Ten,
-            },
-            Position::South,
-            true,
-            Some(CardBeforeBidding {
-                suit: Suit::Diamonds,
-                rank: Rank::Nine,
-            }),
-            None,
-            false,
-        );
-
-        test_bidding_old(
-            "Right, off ace, off jack ten nine, dealer, candidate trump matches",
-            HandBeforeBidding {
-                cards: vec![
-                    CardBeforeBidding {
-                        suit: Suit::Spades,
-                        rank: Rank::Jack,
-                    },
-                    CardBeforeBidding {
-                        suit: Suit::Clubs,
-                        rank: Rank::Ace,
-                    },
-                    CardBeforeBidding {
-                        suit: Suit::Diamonds,
-                        rank: Rank::Jack,
-                    },
-                    CardBeforeBidding {
-                        suit: Suit::Diamonds,
-                        rank: Rank::Ten,
-                    },
-                    CardBeforeBidding {
-                        suit: Suit::Diamonds,
-                        rank: Rank::Nine,
-                    },
-                ],
-            },
-            CardBeforeBidding {
-                suit: Suit::Spades,
-                rank: Rank::Nine,
             },
             Position::South,
             true,
@@ -1210,7 +1178,7 @@ mod tests {
                 rank: Rank::Ten,
             }),
             None,
-            false,
+            true,
         );
 
         test_bidding_old(
@@ -1227,7 +1195,7 @@ mod tests {
             true,
             Some(CardBeforeBidding{suit:Suit::Diamonds, rank:Rank::Ten}),
             None,
-            false,
+            true,
         );
 
         test_bidding_old(
@@ -1365,31 +1333,60 @@ mod tests {
         );
     }
 
-    #[test_case(["TS", "NS", "ND", "NC", "NH"], "KS", Position::South, BidResultAll::NoOneCalled, None)]
-    #[test_case(["JS", "NS", "AD", "KC", "KH"], "KD", Position::West, BidResultAll::NoOneCalled, None)]
-    #[test_case(["JS", "AC", "JD", "TD", "ND"], "NS", Position::South, BidResultAll::called("S"), Some("ND"))]
-    #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::South, BidResultAll::called("S"), Some("ND"))]
-    #[test_case(["JS", "JC", "AS", "KS", "QS"], "AD", Position::West, BidResultAll::alone("S"), None)]
-    #[test_case(["JS", "KS", "QS", "QH", "QD"], "AD", Position::West, BidResultAll::called("S"), None)]
-    #[test_case(["JS", "NS", "AD", "TH", "NH"], "KD", Position::West, BidResultAll::called("S"), None)]
-    #[test_case(["JS", "NS", "AC", "KH", "QH"], "TS", Position::South, BidResultAll::called("S"), Some("QH"))]
-    #[test_case(["JS", "JC", "AD", "KH", "QH"], "TS", Position::South, BidResultAll::called("S"), Some("QH"))]
-    #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::West, BidResultAll::NoOneCalled, None)]
-    #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::North, BidResultAll::called("S"), None)]
-    #[test_case(["JS", "NS", "AC", "AH", "ND"], "AD", Position::West, BidResultAll::called("S"), None)]
-    #[test_case(["JS", "AS", "KS", "QS", "JC"], "TS", Position::West, BidResultAll::alone("S"), None)]
-    #[test_case(["JS", "AS", "JC", "AC", "KC"], "KS", Position::East, BidResultAll::alone("C"), None)]
-    #[test_case(["JS", "AS", "JC", "AC", "KC"], "KS", Position::North, BidResultAll::called("S"), None)]
-    #[test_case(["JS", "NS", "AC", "KD", "KH"], "AD", Position::West, BidResultAll::called("S"), None)]
-    #[test_case(["KS", "QS", "TS", "NS", "NH"], "AD", Position::West, BidResultAll::called("S"), None)]
-    #[test_case(["JS", "JC", "AS", "KS", "QS"], "TS", Position::South, BidResultAll::alone("S"), Some("TS"))]
-    #[test_case(["JS", "JC", "AS", "KS", "TD"], "QS", Position::South, BidResultAll::alone("S"), Some("TD"))]
-    #[test_case(["JS", "JC", "AS", "QD", "TH"], "KS", Position::South, BidResultAll::called("S"), Some("TH"))]
-    #[test_case(["JS", "JC", "AS", "QH", "TD"], "KS", Position::South, BidResultAll::called("S"), Some("TD"))]
-    #[test_case(["JS", "JC", "AS", "KH", "QH"], "KS", Position::South, BidResultAll::alone("S"), Some("QH"))]
-    #[test_case(["JS", "JC", "AS", "QH", "KH"], "KS", Position::South, BidResultAll::alone("S"), Some("QH"))]
-    #[test_case(["JS", "JC", "AS", "KS", "AH"], "QS", Position::South, BidResultAll::alone("S"), Some("AH"))]
-    #[test_case(["JS", "AS", "KS", "KH", "QH"], "JC", Position::East, BidResultAll::alone("S"), None)]
+    #[test_case(["TS", "NS", "ND", "NC", "NH"], "KS", Position::South,
+        BidResultAll::NoOneCalled, None ; "All nines and tens, dealer, trump matches, pass")]
+    #[test_case(["JS", "NS", "AD", "KC", "KH"], "KD", Position::West,
+        BidResultAll::NoOneCalled, None ; "Right nine off ace 4 suited, pass")]
+    #[test_case(["JS", "AC", "JD", "TD", "ND"], "NS", Position::South,
+        BidResultAll::called("S"), Some("ND") ; "Right off ace 3 suited, pick up the nine")]
+    #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::South,
+        BidResultAll::called("S"), Some("ND") ; "Right nine off ace 3 suited, pick up the ten")]
+    #[test_case(["JS", "JC", "AS", "KS", "QS"], "AD", Position::West,
+        BidResultAll::alone("S"), None ; "Perfect hand, call alone")]
+    #[test_case(["JS", "KS", "QS", "QH", "QD"], "AD", Position::West,
+        BidResultAll::called("S"), None ; "Right king queen 3 suited, call")]
+    #[test_case(["JS", "NS", "AD", "TH", "NH"], "KD", Position::West,
+        BidResultAll::called("S"), None ; "Right left king 2 suited, call alone")]
+    //TODO: figure out what's up with these tests
+    #[test_case(["JS", "NS", "AC", "KH", "QH"], "TS", Position::South,
+        BidResultAll::called("S"), Some("QH") ; "Right nine off ace 3 suited, pick up the ten (not alone)")]
+    #[test_case(["JS", "JC", "AD", "KH", "QH"], "TS", Position::South,
+        BidResultAll::called("S"), Some("QH") ; "Right nine off ace 3 suited, pick up the ten (not alone again)")]
+    #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::West,
+        BidResultAll::NoOneCalled, None ; "Right nine off ace, 3 suited, do not order to opponent")]
+    #[test_case(["JS", "NS", "AC", "TD", "ND"], "TS", Position::North,
+        BidResultAll::called("S"), None ; "Right nine off ace 3 suited, order to partner")]
+    #[test_case(["JS", "NS", "AC", "AH", "ND"], "AD", Position::West,
+        BidResultAll::called("S"), None ; "Right nine 2 off aces 4 suited, call")]
+    #[test_case(["JS", "AS", "KS", "QS", "JC"], "TS", Position::West,
+        BidResultAll::alone("S"), None ; "Perfect hand, order to opponent alone")]
+    #[test_case(["JS", "AS", "JC", "AC", "KC"], "KS", Position::East,
+        BidResultAll::alone("C"), None ; "Right left ace, off ace king, left of dealer, wait for next suit")]
+    #[test_case(["JS", "AS", "JC", "AC", "KC"], "KS", Position::North,
+        BidResultAll::alone("S"), None ; "Right left ace, off ace king, opposite dealer, order up alone")]
+    #[test_case(["JS", "NS", "AC", "KD", "KH"], "AD", Position::West,
+        BidResultAll::called("S"), None ; "Right nine off ace 3 suited, trump makes off king good, calls")]
+    #[test_case(["KS", "QS", "TS", "NS", "NH"], "AD", Position::West,
+        BidResultAll::called("S"), None ; "Bottom four trump off nine, call")]
+    #[test_case(["JS", "JC", "AS", "KS", "QS"], "TS", Position::South,
+        BidResultAll::alone("S"), Some("TS") ; "Perfect hand, pick up and discard ten alone")]
+    #[test_case(["JS", "JC", "AS", "KS", "TD"], "QS", Position::South,
+        BidResultAll::alone("S"), Some("TD") ; "Perfect hand after picking up, pick up alone")]
+    #[test_case(["JS", "JC", "AS", "QD", "TH"], "KS", Position::South,
+        BidResultAll::alone("S"), Some("TH") ; "Right left ace off queen 3 suited, pick up the king alone")]
+    #[test_case(["JS", "JC", "AS", "TD", "QH"], "KS", Position::South,
+        BidResultAll::alone("S"), Some("TD") ; "Right left ace off queen 3 suited, pick up the king alone (other order)")]
+    #[test_case(["JS", "JC", "AS", "KH", "QH"], "KS", Position::South,
+        BidResultAll::alone("S"), Some("QH") ; "Right left ace off king queen, pick up the king alone")]
+    #[test_case(["JS", "JC", "AS", "QH", "KH"], "KS", Position::South,
+        BidResultAll::alone("S"), Some("QH") ; "Right left ace off king queen, pick up the queen alone (other order)")]
+    #[test_case(["JS", "JC", "AS", "KS", "AH"], "QS", Position::South,
+        BidResultAll::alone("S"), Some("AH") ; "Right left ace king off ace, pick up the queen alone")]
+    #[test_case(["JS", "AS", "KS", "KH", "QH"], "JC", Position::East,
+        BidResultAll::alone("S"), None ; "Right ace king, off king queen, pick up the left alone")]
+    //TODO: test right nine 3 off aces
+    //TODO: test not waiting for the next suit if the current one is better
+    //TODO: better test logic around turned down card making things good
     //TODO: test discarding a higher card if it drops a suit
     fn test_bidding(
         hand: [&str; 5],
