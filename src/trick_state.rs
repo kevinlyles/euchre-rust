@@ -81,6 +81,15 @@ impl TrickState {
                             &self.leader,
                             cards_played.as_slice(),
                         ),
+                    };
+                    let cards_played = cards_played.into();
+                    for player in players {
+                        player.trick_end(
+                            &self.bid_result.caller(),
+                            &self.bid_result.trump(),
+                            &self.leader,
+                            &cards_played,
+                        );
                     }
                 } else {
                     let trump = &self.bid_result.trump();
@@ -112,6 +121,15 @@ impl TrickState {
                             &self.leader,
                             cards_played.as_slice(),
                         ),
+                    };
+                    let cards_played = cards_played.into();
+                    for player in players {
+                        player.trick_end(
+                            &self.bid_result.caller(),
+                            &self.bid_result.trump(),
+                            &self.leader,
+                            &cards_played,
+                        );
                     }
                 } else {
                     let trump = &self.bid_result.trump();
@@ -132,6 +150,15 @@ impl TrickState {
                             &self.leader,
                             new_cards_played.as_slice(),
                         ),
+                    };
+                    let cards_played = new_cards_played.into();
+                    for player in players {
+                        player.trick_end(
+                            &self.bid_result.caller(),
+                            trump,
+                            &self.leader,
+                            &cards_played,
+                        );
                     }
                 }
                 None

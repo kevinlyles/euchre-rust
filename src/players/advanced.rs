@@ -407,6 +407,19 @@ impl Player for AdvancedPlayer {
             }
         }
     }
+
+    fn trick_end(
+        &mut self,
+        _caller: &Position,
+        &trump: &Suit,
+        _leader: &Position,
+        cards_played: &Vec<Card>,
+    ) -> () {
+        match cards_played[0] {
+            card if card.suit == trump => self.trump_has_been_led = true,
+            _ => (),
+        }
+    }
 }
 
 #[cfg(test)]

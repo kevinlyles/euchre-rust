@@ -84,4 +84,13 @@ pub trait Player: Clone {
             None => hand.cards[0],
         }
     }
+
+    fn trick_end(
+        &mut self,
+        _caller: &Position,
+        _trump: &Suit,
+        _leader: &Position,
+        _cards_played: &Vec<Card>,
+    ) -> () {
+    }
 }
