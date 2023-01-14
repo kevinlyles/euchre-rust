@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[clonable]
-pub trait Player: Clone {
+pub trait Player: Clone + Send + Sync {
     fn should_order_up(
         &mut self,
         _hand: &HandBeforeBidding,

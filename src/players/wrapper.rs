@@ -7,20 +7,20 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub(crate) struct Wrapper<'a> {
-    bidder: Box<dyn Player + Send + Sync + 'a>,
-    player: Box<dyn Player + Send + Sync + 'a>,
+pub(crate) struct Wrapper {
+    bidder: Box<dyn Player>,
+    player: Box<dyn Player>,
 }
 
-impl<'a> Wrapper<'a> {
+impl Wrapper {
     pub(crate) fn create_separate_bidder(
-        bidder: Box<dyn Player + Send + Sync + 'a>,
-        player: Box<dyn Player + Send + Sync + 'a>,
-    ) -> Wrapper<'a> {
+        bidder: Box<dyn Player>,
+        player: Box<dyn Player>,
+    ) -> Wrapper {
         Wrapper { bidder, player }
     }
 
-    pub(crate) fn create_single_player(player: Box<dyn Player + Send + Sync + 'a>) -> Wrapper<'a> {
+    pub(crate) fn create_single_player(player: Box<dyn Player>) -> Wrapper {
         Wrapper {
             bidder: player.clone(),
             player: player.clone(),
@@ -28,7 +28,7 @@ impl<'a> Wrapper<'a> {
     }
 }
 
-impl Player for Wrapper<'_> {
+impl Player for Wrapper {
     fn should_order_up(
         &mut self,
         hand: &HandBeforeBidding,
@@ -101,5 +101,15 @@ impl Player for Wrapper<'_> {
         led: Option<Suit>,
     ) -> Card {
         self.player.play_card(hand, caller, trump, led)
+    }
+
+    fn trick_end(
+        &mut self,
+        caller: &Position,
+        trump: &Suit,
+        leader: &Position,
+        cards_played: &Vec<Card>,
+    ) -> () {
+        self.player.trick_end(caller, trump, leader, cards_played)
     }
 }
