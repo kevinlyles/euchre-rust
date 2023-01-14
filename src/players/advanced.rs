@@ -394,8 +394,8 @@ impl Player for AdvancedPlayer {
                 None => hand.cards[0],
             },
             None => {
-                if self.position == caller
-                    || self.position.partner() == caller && !self.trump_has_been_led
+                if (self.position == caller || self.position.partner() == caller)
+                    && !self.trump_has_been_led
                 {
                     match hand.cards.iter().filter(|card| card.suit == trump).nth(0) {
                         Some(&card) => card,
