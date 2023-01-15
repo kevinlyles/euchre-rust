@@ -99,9 +99,9 @@ impl Player for Wrapper {
         hand: &Hand,
         caller: &Position,
         trump: &Suit,
-        led: Option<Suit>,
+        cards_played: &Vec<Card>,
     ) -> Card {
-        self.player.play_card(hand, caller, trump, led)
+        self.player.play_card(hand, caller, trump, cards_played)
     }
 
     fn trick_end(

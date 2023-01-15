@@ -70,19 +70,20 @@ pub trait Player: Clone + Send + Sync {
         hand.cards[0]
     }
 
-    //TODO: include cards played so far
     fn play_card(
         &mut self,
         hand: &Hand,
         _caller: &Position,
         _trump: &Suit,
-        led: Option<Suit>,
+        cards_played: &Vec<Card>,
     ) -> Card {
-        match led {
-            Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
-                Some(card) => *card,
-                None => hand.cards[0],
-            },
+        match cards_played.first() {
+            Some(Card { suit, .. }) => {
+                match hand.cards.iter().filter(|card| card.suit == *suit).nth(0) {
+                    Some(card) => *card,
+                    None => hand.cards[0],
+                }
+            }
             None => hand.cards[0],
         }
     }

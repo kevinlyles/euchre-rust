@@ -41,7 +41,7 @@ impl TrickState {
                     &hand,
                     &self.bid_result.caller(),
                     &self.bid_result.trump(),
-                    None,
+                    &Vec::new(),
                 );
                 if !hand.cards.contains(&card) {
                     card = hand.cards[0];
@@ -60,7 +60,7 @@ impl TrickState {
                     hands,
                     &self.bid_result.caller(),
                     &self.bid_result.trump(),
-                    &cards_played[0].suit,
+                    &cards_played.into(),
                 );
                 self.phase = TrickPhase::BeforeThirdCard {
                     cards_played: [cards_played[0], card],
@@ -91,7 +91,7 @@ impl TrickState {
                         hands,
                         &self.bid_result.caller(),
                         &self.bid_result.trump(),
-                        &cards_played[0].suit,
+                        &cards_played.into(),
                     );
                     self.phase = TrickPhase::BeforeFourthCard {
                         cards_played: [cards_played[0], cards_played[1], card],
@@ -124,7 +124,7 @@ impl TrickState {
                         hands,
                         &self.bid_result.caller(),
                         &self.bid_result.trump(),
-                        &cards_played[0].suit,
+                        &cards_played.into(),
                     );
                     let new_cards_played =
                         [cards_played[0], cards_played[1], cards_played[2], card];
@@ -152,17 +152,19 @@ impl TrickState {
         hands: &mut [Hand; 4],
         caller: &Position,
         trump: &Suit,
-        suit_led: &Suit,
+        cards_played: &Vec<Card>,
     ) -> Card {
         let hand = &mut hands[player.index()];
-        let mut card = players[player.index()].play_card(&hand, &caller, &trump, None);
+        let mut card = players[player.index()].play_card(&hand, &caller, &trump, cards_played);
         if !hand.cards.contains(&card) {
             card = hand.cards[0]
         }
-        if card.suit != *suit_led {
-            match hand.cards.iter().filter(|card| card.suit == *trump).next() {
-                Some(card_following_suit) => card = *card_following_suit,
-                None => (),
+        if let Some(led_card) = cards_played.first() {
+            if card.suit != led_card.suit {
+                match hand.cards.iter().filter(|card| card.suit == *trump).next() {
+                    Some(card_following_suit) => card = *card_following_suit,
+                    None => (),
+                }
             }
         }
         hand.cards.retain(|c| c != &card);

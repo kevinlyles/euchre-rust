@@ -1,7 +1,7 @@
 use enum_iterator::IntoEnumIterator;
 
 use crate::{
-    bid_result::{BidResultCalled},
+    bid_result::BidResultCalled,
     card::{Card, CardBeforeBidding},
     hand::{Hand, HandBeforeBidding},
     player::Player,
@@ -16,7 +16,7 @@ pub(crate) struct AdvancedPlayer {
     position: Position,
     trump_has_been_led: bool,
     is_definitely_out_of_trump: [bool; 4],
-    trump_played: [bool; RankWithBowers::RightBower as usize],
+    trump_played: [bool; RankWithBowers::RightBower as usize + 1],
 }
 
 impl AdvancedPlayer {
@@ -25,7 +25,7 @@ impl AdvancedPlayer {
             position,
             trump_has_been_led: false,
             is_definitely_out_of_trump: [false; 4],
-            trump_played: [false; RankWithBowers::RightBower as usize],
+            trump_played: [false; RankWithBowers::RightBower as usize + 1],
         }
     }
 }
@@ -392,10 +392,15 @@ impl Player for AdvancedPlayer {
         hand: &Hand,
         &caller: &Position,
         &trump: &Suit,
-        led: Option<Suit>,
+        cards_played: &Vec<Card>,
     ) -> Card {
-        match led {
-            Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
+        match cards_played.first() {
+            Some(led_card) => match hand
+                .cards
+                .iter()
+                .filter(|card| card.suit == led_card.suit)
+                .nth(0)
+            {
                 Some(&card) => card,
                 None => hand.cards[0],
             },
