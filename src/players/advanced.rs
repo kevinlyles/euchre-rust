@@ -1,11 +1,13 @@
 use enum_iterator::IntoEnumIterator;
 
 use crate::{
+    bid_result::{BidResultCalled},
     card::{Card, CardBeforeBidding},
     hand::{Hand, HandBeforeBidding},
     player::Player,
     position::Position,
     rank::Rank,
+    rank_with_bowers::RankWithBowers,
     suit::Suit,
 };
 
@@ -13,6 +15,8 @@ use crate::{
 pub(crate) struct AdvancedPlayer {
     position: Position,
     trump_has_been_led: bool,
+    is_definitely_out_of_trump: [bool; 4],
+    trump_played: [bool; RankWithBowers::RightBower as usize],
 }
 
 impl AdvancedPlayer {
@@ -20,6 +24,8 @@ impl AdvancedPlayer {
         AdvancedPlayer {
             position,
             trump_has_been_led: false,
+            is_definitely_out_of_trump: [false; 4],
+            trump_played: [false; RankWithBowers::RightBower as usize],
         }
     }
 }
@@ -390,15 +396,22 @@ impl Player for AdvancedPlayer {
     ) -> Card {
         match led {
             Some(suit) => match hand.cards.iter().filter(|card| card.suit == suit).nth(0) {
-                Some(card) => *card,
+                Some(&card) => card,
                 None => hand.cards[0],
             },
             None => {
                 if (self.position == caller || self.position.partner() == caller)
                     && !self.trump_has_been_led
                 {
-                    match hand.cards.iter().filter(|card| card.suit == trump).nth(0) {
-                        Some(&card) => card,
+                    let my_trump: Vec<&Card> = hand
+                        .cards
+                        .iter()
+                        .filter(|card| card.suit == trump)
+                        .collect();
+
+                    match my_trump.iter().max_by_key(|card| card.rank) {
+                        Some(&&card) if card.rank >= RankWithBowers::Ace => card,
+                        Some(_) => **(my_trump.iter().min_by_key(|card| card.rank).unwrap()),
                         None => hand.cards[0],
                     }
                 } else {
@@ -410,13 +423,29 @@ impl Player for AdvancedPlayer {
 
     fn trick_end(
         &mut self,
-        _caller: &Position,
-        &trump: &Suit,
-        _leader: &Position,
+        bid_result: &BidResultCalled,
+        leader: &Position,
         cards_played: &Vec<Card>,
     ) -> () {
+        let trump = bid_result.trump();
+
+        for card in cards_played {
+            if card.suit == trump {
+                self.trump_played[card.rank as usize] = true;
+            }
+        }
+
         match cards_played[0] {
-            card if card.suit == trump => self.trump_has_been_led = true,
+            card if card.suit == trump => {
+                self.trump_has_been_led = true;
+                let mut player = *leader;
+                for card in cards_played {
+                    if card.suit != trump {
+                        self.is_definitely_out_of_trump[player.index()] = true;
+                        player = player.next_position_playing(bid_result);
+                    }
+                }
+            }
             _ => (),
         }
     }

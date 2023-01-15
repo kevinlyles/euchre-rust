@@ -1,4 +1,5 @@
 use crate::{
+    bid_result::BidResultCalled,
     card::{Card, CardBeforeBidding},
     hand::{Hand, HandBeforeBidding},
     player::Player,
@@ -105,11 +106,10 @@ impl Player for Wrapper {
 
     fn trick_end(
         &mut self,
-        caller: &Position,
-        trump: &Suit,
+        bid_result: &BidResultCalled,
         leader: &Position,
         cards_played: &Vec<Card>,
     ) -> () {
-        self.player.trick_end(caller, trump, leader, cards_played)
+        self.player.trick_end(bid_result, leader, cards_played)
     }
 }

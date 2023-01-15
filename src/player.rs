@@ -1,6 +1,7 @@
 use dyn_clonable::clonable;
 
 use crate::{
+    bid_result::BidResultCalled,
     card::{Card, CardBeforeBidding},
     hand::{Hand, HandBeforeBidding},
     position::Position,
@@ -69,6 +70,7 @@ pub trait Player: Clone + Send + Sync {
         hand.cards[0]
     }
 
+    //TODO: include cards played so far
     fn play_card(
         &mut self,
         hand: &Hand,
@@ -87,8 +89,7 @@ pub trait Player: Clone + Send + Sync {
 
     fn trick_end(
         &mut self,
-        _caller: &Position,
-        _trump: &Suit,
+        _bid_result: &BidResultCalled,
         _leader: &Position,
         _cards_played: &Vec<Card>,
     ) -> () {
