@@ -6,6 +6,7 @@ use crate::{
     hand::{Hand, HandBeforeBidding},
     position::Position,
     suit::Suit,
+    trick_state::PlayedCard,
 };
 
 #[clonable]
@@ -74,24 +75,19 @@ pub trait Player: Clone + Send + Sync {
         &mut self,
         hand: &Hand,
         _bid_result: &BidResultCalled,
-        cards_played: &Vec<Card>,
+        cards_played: &Vec<PlayedCard>,
     ) -> Card {
         match cards_played.first() {
-            Some(Card { suit, .. }) => {
-                match hand.cards.iter().filter(|card| card.suit == *suit).nth(0) {
-                    Some(card) => *card,
-                    None => hand.cards[0],
-                }
-            }
+            Some(PlayedCard {
+                card: Card { suit, .. },
+                ..
+            }) => match hand.cards.iter().filter(|card| card.suit == *suit).nth(0) {
+                Some(card) => *card,
+                None => hand.cards[0],
+            },
             None => hand.cards[0],
         }
     }
 
-    fn trick_end(
-        &mut self,
-        _bid_result: &BidResultCalled,
-        _leader: &Position,
-        _cards_played: &Vec<Card>,
-    ) -> () {
-    }
+    fn trick_end(&mut self, _bid_result: &BidResultCalled, _cards_played: &Vec<PlayedCard>) -> () {}
 }

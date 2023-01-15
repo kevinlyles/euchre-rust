@@ -9,6 +9,7 @@ use crate::{
     rank::Rank,
     rank_with_bowers::RankWithBowers,
     suit::Suit,
+    trick_state::PlayedCard,
 };
 
 #[derive(Clone)]
@@ -391,15 +392,15 @@ impl Player for AdvancedPlayer {
         &mut self,
         hand: &Hand,
         bid_result: &BidResultCalled,
-        cards_played: &Vec<Card>,
+        cards_played: &Vec<PlayedCard>,
     ) -> Card {
         let caller = bid_result.caller();
         let trump = bid_result.trump();
         match cards_played.first() {
-            Some(led_card) => match hand
+            Some(first) => match hand
                 .cards
                 .iter()
-                .filter(|card| card.suit == led_card.suit)
+                .filter(|card| card.suit == first.card.suit)
                 .nth(0)
             {
                 Some(&card) => card,
@@ -427,28 +428,21 @@ impl Player for AdvancedPlayer {
         }
     }
 
-    fn trick_end(
-        &mut self,
-        bid_result: &BidResultCalled,
-        leader: &Position,
-        cards_played: &Vec<Card>,
-    ) -> () {
+    fn trick_end(&mut self, bid_result: &BidResultCalled, cards_played: &Vec<PlayedCard>) -> () {
         let trump = bid_result.trump();
 
-        for card in cards_played {
-            if card.suit == trump {
-                self.trump_played[card.rank as usize] = true;
+        for played_card in cards_played {
+            if played_card.card.suit == trump {
+                self.trump_played[played_card.card.rank as usize] = true;
             }
         }
 
         match cards_played[0] {
-            card if card.suit == trump => {
+            played_card if played_card.card.suit == trump => {
                 self.trump_has_been_led = true;
-                let mut player = *leader;
-                for card in cards_played {
-                    if card.suit != trump {
-                        self.is_definitely_out_of_trump[player.index()] = true;
-                        player = player.next_position_playing(bid_result);
+                for played_card in cards_played {
+                    if played_card.card.suit != trump {
+                        self.is_definitely_out_of_trump[played_card.player.index()] = true;
                     }
                 }
             }

@@ -1,5 +1,6 @@
 use crate::{
     bid_result::BidResultCalled, card::Card, hand::Hand, player::Player, position::Position,
+    suit::Suit,
 };
 
 #[derive(Debug)]
@@ -12,10 +13,16 @@ pub(crate) struct TrickState {
 #[derive(Debug)]
 pub(crate) enum TrickPhase {
     BeforeFirstCard,
-    BeforeSecondCard { cards_played: [Card; 1] },
-    BeforeThirdCard { cards_played: [Card; 2] },
-    BeforeFourthCard { cards_played: [Card; 3] },
+    BeforeSecondCard { cards_played: [PlayedCard; 1] },
+    BeforeThirdCard { cards_played: [PlayedCard; 2] },
+    BeforeFourthCard { cards_played: [PlayedCard; 3] },
     Done { trick_winner: Position },
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct PlayedCard {
+    pub player: Position,
+    pub card: Card,
 }
 
 impl TrickState {
@@ -43,93 +50,98 @@ impl TrickState {
                 }
                 hand.cards.retain(|c| c != &card);
                 self.phase = TrickPhase::BeforeSecondCard {
-                    cards_played: [card],
+                    cards_played: [PlayedCard { player, card }],
                 };
                 None
             }
             TrickPhase::BeforeSecondCard { cards_played } => {
-                let player = &self.leader.next_position_playing(&self.bid_result);
+                let player = self.leader.next_position_playing(&self.bid_result);
                 let card = TrickState::play_card(
-                    player,
+                    &player,
                     players,
                     hands,
                     &self.bid_result,
                     &cards_played.into(),
                 );
                 self.phase = TrickPhase::BeforeThirdCard {
-                    cards_played: [cards_played[0], card],
+                    cards_played: [cards_played[0], PlayedCard { player, card }],
                 };
                 None
             }
             TrickPhase::BeforeThirdCard { cards_played } => {
-                let player = &self
+                let player = self
                     .leader
                     .next_position_playing(&self.bid_result)
                     .next_position_playing(&self.bid_result);
-                if *player == self.leader {
+                if player == self.leader {
                     self.phase = TrickPhase::Done {
                         trick_winner: TrickState::get_winning_position(
-                            &self.bid_result,
-                            &self.leader,
+                            &self.bid_result.trump(),
                             cards_played.as_slice(),
                         ),
                     };
                     let cards_played = cards_played.into();
                     for player in players {
-                        player.trick_end(&self.bid_result, &self.leader, &cards_played);
+                        player.trick_end(&self.bid_result, &cards_played);
                     }
                 } else {
                     let card = TrickState::play_card(
-                        player,
+                        &player,
                         players,
                         hands,
                         &self.bid_result,
                         &cards_played.into(),
                     );
                     self.phase = TrickPhase::BeforeFourthCard {
-                        cards_played: [cards_played[0], cards_played[1], card],
+                        cards_played: [
+                            cards_played[0],
+                            cards_played[1],
+                            PlayedCard { player, card },
+                        ],
                     }
                 }
                 None
             }
             TrickPhase::BeforeFourthCard { cards_played } => {
-                let player = &self
+                let player = self
                     .leader
                     .next_position_playing(&self.bid_result)
                     .next_position_playing(&self.bid_result)
                     .next_position_playing(&self.bid_result);
-                if *player == self.leader {
+                if player == self.leader {
                     self.phase = TrickPhase::Done {
                         trick_winner: TrickState::get_winning_position(
-                            &self.bid_result,
-                            &self.leader,
+                            &self.bid_result.trump(),
                             cards_played.as_slice(),
                         ),
                     };
                     let cards_played = cards_played.into();
                     for player in players {
-                        player.trick_end(&self.bid_result, &self.leader, &cards_played);
+                        player.trick_end(&self.bid_result, &cards_played);
                     }
                 } else {
                     let card = TrickState::play_card(
-                        player,
+                        &player,
                         players,
                         hands,
                         &self.bid_result,
                         &cards_played.into(),
                     );
-                    let new_cards_played =
-                        [cards_played[0], cards_played[1], cards_played[2], card];
+                    let new_cards_played = [
+                        cards_played[0],
+                        cards_played[1],
+                        cards_played[2],
+                        PlayedCard { player, card },
+                    ];
                     self.phase = TrickPhase::Done {
                         trick_winner: TrickState::get_winning_position(
-                            &self.bid_result,
-                            &self.leader,
+                            &self.bid_result.trump(),
                             new_cards_played.as_slice(),
                         ),
                     };
                     let cards_played = new_cards_played.into();
                     for player in players {
-                        player.trick_end(&self.bid_result, &self.leader, &cards_played);
+                        player.trick_end(&self.bid_result, &cards_played);
                     }
                 }
                 None
@@ -143,7 +155,7 @@ impl TrickState {
         players: &mut [impl Player; 4],
         hands: &mut [Hand; 4],
         bid_result: &BidResultCalled,
-        cards_played: &Vec<Card>,
+        cards_played: &Vec<PlayedCard>,
     ) -> Card {
         let hand = &mut hands[player.index()];
         let mut card = players[player.index()].play_card(&hand, bid_result, cards_played);
@@ -151,9 +163,13 @@ impl TrickState {
             card = hand.cards[0]
         }
         if let Some(led_card) = cards_played.first() {
-            if card.suit != led_card.suit {
-                let trump = bid_result.trump();
-                match hand.cards.iter().filter(|card| card.suit == trump).next() {
+            if card.suit != led_card.card.suit {
+                match hand
+                    .cards
+                    .iter()
+                    .filter(|card| card.suit == led_card.card.suit)
+                    .next()
+                {
                     Some(card_following_suit) => card = *card_following_suit,
                     None => (),
                 }
@@ -163,37 +179,23 @@ impl TrickState {
         card
     }
 
-    fn get_winning_position(
-        bid_result: &BidResultCalled,
-        leader: &Position,
-        cards_played: &[Card],
-    ) -> Position {
-        //TODO: see if we can combine these steps?
-        let winning_card = cards_played
+    fn get_winning_position(&trump: &Suit, cards_played: &[PlayedCard]) -> Position {
+        cards_played
             .iter()
-            .reduce(|first_card, second_card| {
-                if first_card.suit == second_card.suit {
-                    if first_card.rank > second_card.rank {
-                        first_card
+            .reduce(|first_played_card, second_played_card| {
+                if first_played_card.card.suit == second_played_card.card.suit {
+                    if first_played_card.card.rank > second_played_card.card.rank {
+                        first_played_card
                     } else {
-                        second_card
+                        second_played_card
                     }
-                } else if second_card.suit == bid_result.trump() {
-                    second_card
+                } else if second_played_card.card.suit == trump {
+                    second_played_card
                 } else {
-                    first_card
+                    first_played_card
                 }
             })
-            .unwrap();
-        let mut player = *leader;
-        let mut iterator = cards_played.iter();
-        loop {
-            match iterator.next() {
-                Some(card) if card == winning_card => break,
-                None => panic!(),
-                _ => player = player.next_position_playing(bid_result),
-            }
-        }
-        player
+            .unwrap()
+            .player
     }
 }
