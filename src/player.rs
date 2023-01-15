@@ -73,8 +73,7 @@ pub trait Player: Clone + Send + Sync {
     fn play_card(
         &mut self,
         hand: &Hand,
-        _caller: &Position,
-        _trump: &Suit,
+        _bid_result: &BidResultCalled,
         cards_played: &Vec<Card>,
     ) -> Card {
         match cards_played.first() {

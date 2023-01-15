@@ -1,6 +1,5 @@
 use crate::{
     bid_result::BidResultCalled, card::Card, hand::Hand, player::Player, position::Position,
-    suit::Suit,
 };
 
 #[derive(Debug)]
@@ -37,12 +36,8 @@ impl TrickState {
             TrickPhase::BeforeFirstCard => {
                 let player = self.leader;
                 let hand = &mut hands[player.index()];
-                let mut card = players[player.index()].play_card(
-                    &hand,
-                    &self.bid_result.caller(),
-                    &self.bid_result.trump(),
-                    &Vec::new(),
-                );
+                let mut card =
+                    players[player.index()].play_card(&hand, &self.bid_result, &Vec::new());
                 if !hand.cards.contains(&card) {
                     card = hand.cards[0];
                 }
@@ -58,8 +53,7 @@ impl TrickState {
                     player,
                     players,
                     hands,
-                    &self.bid_result.caller(),
-                    &self.bid_result.trump(),
+                    &self.bid_result,
                     &cards_played.into(),
                 );
                 self.phase = TrickPhase::BeforeThirdCard {
@@ -89,8 +83,7 @@ impl TrickState {
                         player,
                         players,
                         hands,
-                        &self.bid_result.caller(),
-                        &self.bid_result.trump(),
+                        &self.bid_result,
                         &cards_played.into(),
                     );
                     self.phase = TrickPhase::BeforeFourthCard {
@@ -122,8 +115,7 @@ impl TrickState {
                         player,
                         players,
                         hands,
-                        &self.bid_result.caller(),
-                        &self.bid_result.trump(),
+                        &self.bid_result,
                         &cards_played.into(),
                     );
                     let new_cards_played =
@@ -150,18 +142,18 @@ impl TrickState {
         player: &Position,
         players: &mut [impl Player; 4],
         hands: &mut [Hand; 4],
-        caller: &Position,
-        trump: &Suit,
+        bid_result: &BidResultCalled,
         cards_played: &Vec<Card>,
     ) -> Card {
         let hand = &mut hands[player.index()];
-        let mut card = players[player.index()].play_card(&hand, &caller, &trump, cards_played);
+        let mut card = players[player.index()].play_card(&hand, bid_result, cards_played);
         if !hand.cards.contains(&card) {
             card = hand.cards[0]
         }
         if let Some(led_card) = cards_played.first() {
             if card.suit != led_card.suit {
-                match hand.cards.iter().filter(|card| card.suit == *trump).next() {
+                let trump = bid_result.trump();
+                match hand.cards.iter().filter(|card| card.suit == trump).next() {
                     Some(card_following_suit) => card = *card_following_suit,
                     None => (),
                 }

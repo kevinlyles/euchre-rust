@@ -97,11 +97,10 @@ impl Player for Wrapper {
     fn play_card(
         &mut self,
         hand: &Hand,
-        caller: &Position,
-        trump: &Suit,
+        bid_result: &BidResultCalled,
         cards_played: &Vec<Card>,
     ) -> Card {
-        self.player.play_card(hand, caller, trump, cards_played)
+        self.player.play_card(hand, bid_result, cards_played)
     }
 
     fn trick_end(

@@ -390,10 +390,11 @@ impl Player for AdvancedPlayer {
     fn play_card(
         &mut self,
         hand: &Hand,
-        &caller: &Position,
-        &trump: &Suit,
+        bid_result: &BidResultCalled,
         cards_played: &Vec<Card>,
     ) -> Card {
+        let caller = bid_result.caller();
+        let trump = bid_result.trump();
         match cards_played.first() {
             Some(led_card) => match hand
                 .cards
