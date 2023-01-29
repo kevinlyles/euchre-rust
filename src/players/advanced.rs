@@ -124,10 +124,7 @@ impl Player for AdvancedPlayer {
             } else if card.suit == trump_candidate.suit {
                 match highest_card_in_suit[card.suit.index()] {
                     Some(highest_card)
-                        if highest_card.rank == Rank::Jack || highest_card.rank > card.rank =>
-                    {
-                        ()
-                    }
+                        if highest_card.rank == Rank::Jack || highest_card.rank > card.rank => {}
                     _ => highest_card_in_suit[card.suit.index()] = Some(card),
                 }
             } else {
@@ -140,8 +137,8 @@ impl Player for AdvancedPlayer {
         let mut cards_that_could_beat_my_highest = 0;
         for suit in Suit::into_enum_iter() {
             if suit == trump_candidate.suit {
-                match highest_card_in_suit[suit.index()] {
-                    Some(card) => match card.rank {
+                if let Some(card) = highest_card_in_suit[suit.index()] {
+                    match card.rank {
                         Rank::Jack if card.suit != trump_candidate.suit => {
                             cards_that_could_beat_my_highest += 1
                         }
@@ -151,24 +148,31 @@ impl Player for AdvancedPlayer {
                         Rank::Queen => cards_that_could_beat_my_highest += 4,
                         Rank::Ten => cards_that_could_beat_my_highest += 5,
                         Rank::Nine => cards_that_could_beat_my_highest += 6,
-                    },
-                    _ => (),
+                    }
                 }
                 continue;
             }
-            match highest_card_in_suit[suit.index()] {
-                Some(card) => match card.rank {
+            if let Some(card) = highest_card_in_suit[suit.index()] {
+                match card.rank {
                     Rank::Ace => (),
                     Rank::King => cards_that_could_beat_my_highest += 1,
                     Rank::Queen => cards_that_could_beat_my_highest += 2,
                     Rank::Jack => cards_that_could_beat_my_highest += 3,
                     Rank::Ten => cards_that_could_beat_my_highest += 4,
                     Rank::Nine => cards_that_could_beat_my_highest += 5,
-                },
-                _ => (),
+                }
             }
         }
-        return cards_that_could_beat_my_highest <= 2;
+        cards_that_could_beat_my_highest <= 2
+    }
+
+    fn should_defend_alone_ordered(
+        &mut self,
+        _hand: &HandBeforeBidding,
+        _dealer: &Position,
+        _trump_candidate: &CardBeforeBidding,
+    ) -> bool {
+        false
     }
 
     fn call_trump(
@@ -229,15 +233,6 @@ impl Player for AdvancedPlayer {
         max_suit
     }
 
-    fn should_defend_alone_ordered(
-        &mut self,
-        _hand: &HandBeforeBidding,
-        _dealer: &Position,
-        _trump_candidate: &CardBeforeBidding,
-    ) -> bool {
-        false
-    }
-
     fn should_call_alone(
         &mut self,
         hand: &HandBeforeBidding,
@@ -277,10 +272,7 @@ impl Player for AdvancedPlayer {
             } else if card.suit == trump {
                 match highest_card_in_suit[card.suit.index()] {
                     Some(highest_card)
-                        if highest_card.rank == Rank::Jack || highest_card.rank > card.rank =>
-                    {
-                        ()
-                    }
+                        if highest_card.rank == Rank::Jack || highest_card.rank > card.rank => {}
                     _ => highest_card_in_suit[card.suit.index()] = Some(card),
                 }
             } else {
@@ -293,8 +285,8 @@ impl Player for AdvancedPlayer {
         let mut cards_that_could_beat_my_highest = 0;
         for suit in Suit::into_enum_iter() {
             if suit == trump {
-                match highest_card_in_suit[suit.index()] {
-                    Some(card) => match card.rank {
+                if let Some(card) = highest_card_in_suit[suit.index()] {
+                    match card.rank {
                         Rank::Jack if card.suit != trump => cards_that_could_beat_my_highest += 1,
                         Rank::Jack => (),
                         Rank::Ace => cards_that_could_beat_my_highest += 2,
@@ -302,24 +294,22 @@ impl Player for AdvancedPlayer {
                         Rank::Queen => cards_that_could_beat_my_highest += 4,
                         Rank::Ten => cards_that_could_beat_my_highest += 5,
                         Rank::Nine => cards_that_could_beat_my_highest += 6,
-                    },
-                    _ => (),
+                    }
                 }
                 continue;
             }
-            match highest_card_in_suit[suit.index()] {
-                Some(card) => match card.rank {
+            if let Some(card) = highest_card_in_suit[suit.index()] {
+                match card.rank {
                     Rank::Ace => (),
                     Rank::King => cards_that_could_beat_my_highest += 1,
                     Rank::Queen => cards_that_could_beat_my_highest += 2,
                     Rank::Jack => cards_that_could_beat_my_highest += 3,
                     Rank::Ten => cards_that_could_beat_my_highest += 4,
                     Rank::Nine => cards_that_could_beat_my_highest += 5,
-                },
-                _ => (),
+                }
             }
         }
-        return cards_that_could_beat_my_highest <= 2;
+        cards_that_could_beat_my_highest <= 2
     }
 
     fn should_defend_alone_called(
@@ -392,17 +382,12 @@ impl Player for AdvancedPlayer {
         &mut self,
         hand: &Hand,
         bid_result: &BidResultCalled,
-        cards_played: &Vec<PlayedCard>,
+        cards_played: &[PlayedCard],
     ) -> Card {
         let caller = bid_result.caller();
         let trump = bid_result.trump();
         match cards_played.first() {
-            Some(first) => match hand
-                .cards
-                .iter()
-                .filter(|card| card.suit == first.card.suit)
-                .nth(0)
-            {
+            Some(first) => match hand.cards.iter().find(|card| card.suit == first.card.suit) {
                 Some(&card) => card,
                 None => hand.cards[0],
             },
@@ -428,7 +413,7 @@ impl Player for AdvancedPlayer {
         }
     }
 
-    fn trick_end(&mut self, bid_result: &BidResultCalled, cards_played: &Vec<PlayedCard>) -> () {
+    fn trick_end(&mut self, bid_result: &BidResultCalled, cards_played: &[PlayedCard]) {
         let trump = bid_result.trump();
 
         for played_card in cards_played {
@@ -525,7 +510,7 @@ mod tests {
         dealer: Position,
         expected_bid_result: BidResultAll,
         discard: Option<&str>,
-    ) -> () {
+    ) {
         let hand = HandBeforeBidding {
             cards: hand
                 .iter()

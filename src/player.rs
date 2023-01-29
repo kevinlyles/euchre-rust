@@ -75,13 +75,13 @@ pub trait Player: Clone + Send + Sync {
         &mut self,
         hand: &Hand,
         _bid_result: &BidResultCalled,
-        cards_played: &Vec<PlayedCard>,
+        cards_played: &[PlayedCard],
     ) -> Card {
         match cards_played.first() {
             Some(PlayedCard {
                 card: Card { suit, .. },
                 ..
-            }) => match hand.cards.iter().filter(|card| card.suit == *suit).nth(0) {
+            }) => match hand.cards.iter().find(|card| card.suit == *suit) {
                 Some(card) => *card,
                 None => hand.cards[0],
             },
@@ -89,5 +89,5 @@ pub trait Player: Clone + Send + Sync {
         }
     }
 
-    fn trick_end(&mut self, _bid_result: &BidResultCalled, _cards_played: &Vec<PlayedCard>) -> () {}
+    fn trick_end(&mut self, _bid_result: &BidResultCalled, _cards_played: &[PlayedCard]) {}
 }

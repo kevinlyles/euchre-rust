@@ -28,9 +28,8 @@ impl<T: Player> GameState<T> {
     pub(crate) fn step(&mut self) -> Option<String> {
         match &mut self.phase {
             GamePhase::Playing { ref mut hand_state } => {
-                match hand_state.step(&mut self.players) {
-                    Some((player, score)) => self.finish_hand(player, score),
-                    None => (),
+                if let Some((player, score)) = hand_state.step(&mut self.players) {
+                    self.finish_hand(player, score)
                 }
                 None
             }
@@ -48,7 +47,7 @@ impl<T: Player> GameState<T> {
         }
     }
 
-    fn finish_hand(&mut self, player: Position, score: u8) -> () {
+    fn finish_hand(&mut self, player: Position, score: u8) {
         if score > 0 {
             match player {
                 Position::South | Position::North => {

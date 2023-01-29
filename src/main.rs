@@ -1,5 +1,5 @@
 #![forbid(non_ascii_idents)]
-#![warn(clippy::let_underscore)]
+#![warn(let_underscore)]
 #![warn(single_use_lifetimes)]
 #![warn(trivial_casts)]
 #![warn(trivial_numeric_casts)]
@@ -95,6 +95,7 @@ fn main() {
     }
 }
 
+//TODO: use Args crate (or some other crate) to handle this
 fn process_args(
     args: Vec<String>,
 ) -> (
@@ -139,11 +140,9 @@ fn process_args(
                 });
                 i += 1;
             }
-            "--order-up" if order_up == false && matches!(call_suit, None) => order_up = true,
+            "--order-up" if !order_up && matches!(call_suit, None) => order_up = true,
             "--call-suit"
-                if order_up == false
-                    && matches!(call_suit, None)
-                    && i + 1 < simulate_args.len() =>
+                if !order_up && matches!(call_suit, None) && i + 1 < simulate_args.len() =>
             {
                 match Suit::try_create(simulate_args[i + 1].as_str()) {
                     Some(suit) => call_suit = Some(suit),
@@ -151,7 +150,7 @@ fn process_args(
                 };
                 i += 1;
             }
-            "--go-alone" if go_alone == false => go_alone = true,
+            "--go-alone" if !go_alone => go_alone = true,
             "--ignore-other-bids" => ignore_other_bids = true,
             card => match CardBeforeBidding::try_create(card) {
                 Some(card) => hand.cards.push(card),
@@ -160,11 +159,11 @@ fn process_args(
         }
         i += 1;
     }
-    if let None = dealer {
+    if dealer.is_none() {
         panic!("No dealer specified (use --dealer {{N|E|S|W}})");
     }
     let dealer = dealer.unwrap();
-    if let None = trump_candidate {
+    if trump_candidate.is_none() {
         panic!("No trump candidate specified (use --trump-candidate {{A|K|Q|J|T|N}}{{C|D|H|S}})");
     }
     let trump_candidate = trump_candidate.unwrap();
@@ -265,17 +264,14 @@ fn run_permutation(
         _ => return HandResult::DifferentBidResult,
     };
     loop {
-        match hand_state.step(&mut players) {
-            Some((winner, score)) => {
-                return if winner == Position::South || winner == Position::South.partner() {
-                    HandResult::ExpectedBidResult { score: score as i8 }
-                } else {
-                    HandResult::ExpectedBidResult {
-                        score: -(score as i8),
-                    }
+        if let Some((winner, score)) = hand_state.step(&mut players) {
+            return if winner == Position::South || winner == Position::South.partner() {
+                HandResult::ExpectedBidResult { score: score as i8 }
+            } else {
+                HandResult::ExpectedBidResult {
+                    score: -(score as i8),
                 }
-            }
-            None => (),
+            };
         }
     }
 }
@@ -284,29 +280,30 @@ fn add_to_results(
     result_counts: &mut HashMap<HandResult, u64>,
     hand_result: HandResult,
     count: u64,
-) -> () {
+) {
     match result_counts.get_mut(&hand_result) {
         Some(result_count) => {
             *result_count += count;
         }
-        None => match result_counts.insert(hand_result, count) {
-            Some(old_value) => panic!(
-                "Got an old value after get_mut returned None: {}",
-                old_value
-            ),
-            None => (),
-        },
+        None => {
+            if let Some(old_value) = result_counts.insert(hand_result, count) {
+                panic!(
+                    "Got an old value after get_mut returned None: {}",
+                    old_value
+                )
+            }
+        }
     };
 }
 
-fn tally_results(result_counts: HashMap<HandResult, u64>, total_count: u64) -> () {
+fn tally_results(result_counts: HashMap<HandResult, u64>, total_count: u64) {
     let mut results: Vec<&HandResult> = result_counts.keys().collect();
     results.sort();
     let mut expected_value: i64 = 0;
     let mut total_bid_count: u64 = 0;
     println!("Results:");
     for result in results {
-        let count = result_counts.get(&result).unwrap();
+        let count = result_counts.get(result).unwrap();
         match result {
             HandResult::DifferentBidResult => {
                 print_score_line("You didn't get to bid", count, &total_count);
@@ -351,7 +348,7 @@ fn tally_results(result_counts: HashMap<HandResult, u64>, total_count: u64) -> (
     )
 }
 
-fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
+fn print_score_line(description: &str, count: &u64, total_count: &u64) {
     println!(
         "{} {} times ({:.2}%)",
         description,
@@ -360,10 +357,10 @@ fn print_score_line(description: &str, count: &u64, total_count: &u64) -> () {
     )
 }
 
-fn simulate_full_game() -> () {
+fn simulate_full_game() {
     log::set_logger(&LOGGER)
         .map(|()| log::set_max_level(LevelFilter::Info))
-        .unwrap_or_else(|_| println!("{}", "Logging initialization failed!"));
+        .unwrap_or_else(|_| println!("Logging initialization failed!"));
     let players = [
         AdvancedPlayer::create(Position::North),
         AdvancedPlayer::create(Position::East),
@@ -372,12 +369,9 @@ fn simulate_full_game() -> () {
     ];
     let mut game_state = GameState::create(players);
     loop {
-        match game_state.step() {
-            Some(result) => {
-                println!("{}", result);
-                break;
-            }
-            None => (),
+        if let Some(result) = game_state.step() {
+            println!("{}", result);
+            break;
         }
     }
 }

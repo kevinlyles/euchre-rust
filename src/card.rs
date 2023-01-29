@@ -33,13 +33,11 @@ impl fmt::Display for CardBeforeBidding {
 }
 
 impl CardBeforeBidding {
+    //TODO: use FromStr trait instead
     pub fn try_create(name: &str) -> Option<CardBeforeBidding> {
         let (rank_name, suit_name) = name.split_at(name.len() - 1);
         match Rank::try_create(rank_name) {
-            Some(rank) => match Suit::try_create(suit_name) {
-                Some(suit) => Some(CardBeforeBidding { rank, suit }),
-                None => None,
-            },
+            Some(rank) => Suit::try_create(suit_name).map(|suit| CardBeforeBidding { rank, suit }),
             None => None,
         }
     }

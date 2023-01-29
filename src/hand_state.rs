@@ -100,7 +100,6 @@ impl HandState {
             [CardLocation; 18],
         ) -> HandState,
     > {
-        let my_hand = my_hand.clone();
         let mut available_cards = Deck::create_all_cards();
         available_cards.retain(|&card| trump_candidate != card && !my_hand.cards.contains(&card));
         let available_cards = available_cards.try_into().unwrap();
@@ -110,7 +109,7 @@ impl HandState {
                 HandState::create(
                     *dealer,
                     *trump_candidate,
-                    HandState::generate_hands(my_hand, &available_cards, permutation),
+                    HandState::generate_hands(my_hand, available_cards, permutation),
                 )
             },
         )
@@ -147,32 +146,26 @@ impl HandState {
     pub(crate) fn step(&mut self, players: &mut [impl Player; 4]) -> Option<(Position, u8)> {
         match &mut self.phase {
             HandPhase::Bidding { bid_state, hands } => {
-                match bid_state.step(players, hands) {
-                    Some(bid_result) => {
-                        self.phase = match bid_result {
-                            BidResultAll::Called { .. }
-                            | BidResultAll::CalledAlone { .. }
-                            | BidResultAll::DefendedAlone { .. } => {
-                                let bid_result: BidResultCalled = bid_result.try_into().unwrap();
-                                HandPhase::FirstTrick {
-                                    trick_state: TrickState::create(
-                                        bid_result.clone(),
-                                        self.dealer.next_position_playing(&bid_result),
-                                    ),
-                                    hands: HandState::update_bowers(
-                                        hands.clone(),
-                                        &bid_result.trump(),
-                                    ),
-                                    bid_result,
-                                }
-                            }
-                            BidResultAll::NoOneCalled => HandPhase::Scoring {
-                                bid_result,
-                                tricks_taken: [0; 4],
-                            },
+                if let Some(bid_result) = bid_state.step(players, hands) {
+                    self.phase = if let BidResultAll::Called { .. }
+                    | BidResultAll::CalledAlone { .. }
+                    | BidResultAll::DefendedAlone { .. } = bid_result
+                    {
+                        let bid_result: BidResultCalled = bid_result.try_into().unwrap();
+                        HandPhase::FirstTrick {
+                            trick_state: TrickState::create(
+                                bid_result.clone(),
+                                self.dealer.next_position_playing(&bid_result),
+                            ),
+                            hands: HandState::update_bowers(hands.clone(), &bid_result.trump()),
+                            bid_result,
+                        }
+                    } else {
+                        HandPhase::Scoring {
+                            bid_result,
+                            tricks_taken: [0; 4],
                         }
                     }
-                    None => (),
                 };
                 None
             }
@@ -181,18 +174,15 @@ impl HandState {
                 hands,
                 trick_state,
             } => {
-                match trick_state.step(players, hands) {
-                    Some(trick_winner) => {
-                        let mut tricks_taken = [0; 4];
-                        tricks_taken[trick_winner.index()] += 1;
-                        self.phase = HandPhase::SecondTrick {
-                            bid_result: bid_result.clone(),
-                            trick_state: TrickState::create(bid_result.clone(), trick_winner),
-                            hands: hands.clone(),
-                            tricks_taken,
-                        }
+                if let Some(trick_winner) = trick_state.step(players, hands) {
+                    let mut tricks_taken = [0; 4];
+                    tricks_taken[trick_winner.index()] += 1;
+                    self.phase = HandPhase::SecondTrick {
+                        bid_result: bid_result.clone(),
+                        trick_state: TrickState::create(bid_result.clone(), trick_winner),
+                        hands: hands.clone(),
+                        tricks_taken,
                     }
-                    None => (),
                 };
                 None
             }
@@ -202,17 +192,14 @@ impl HandState {
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, hands) {
-                    Some(trick_winner) => {
-                        tricks_taken[trick_winner.index()] += 1;
-                        self.phase = HandPhase::ThirdTrick {
-                            bid_result: bid_result.clone(),
-                            hands: hands.clone(),
-                            trick_state: TrickState::create(bid_result.clone(), trick_winner),
-                            tricks_taken: *tricks_taken,
-                        }
+                if let Some(trick_winner) = trick_state.step(players, hands) {
+                    tricks_taken[trick_winner.index()] += 1;
+                    self.phase = HandPhase::ThirdTrick {
+                        bid_result: bid_result.clone(),
+                        hands: hands.clone(),
+                        trick_state: TrickState::create(bid_result.clone(), trick_winner),
+                        tricks_taken: *tricks_taken,
                     }
-                    None => (),
                 };
                 None
             }
@@ -222,17 +209,14 @@ impl HandState {
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, hands) {
-                    Some(trick_winner) => {
-                        tricks_taken[trick_winner.index()] += 1;
-                        self.phase = HandPhase::FourthTrick {
-                            bid_result: bid_result.clone(),
-                            hands: hands.clone(),
-                            trick_state: TrickState::create(bid_result.clone(), trick_winner),
-                            tricks_taken: *tricks_taken,
-                        }
+                if let Some(trick_winner) = trick_state.step(players, hands) {
+                    tricks_taken[trick_winner.index()] += 1;
+                    self.phase = HandPhase::FourthTrick {
+                        bid_result: bid_result.clone(),
+                        hands: hands.clone(),
+                        trick_state: TrickState::create(bid_result.clone(), trick_winner),
+                        tricks_taken: *tricks_taken,
                     }
-                    None => (),
                 };
                 None
             }
@@ -242,17 +226,14 @@ impl HandState {
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, hands) {
-                    Some(trick_winner) => {
-                        tricks_taken[trick_winner.index()] += 1;
-                        self.phase = HandPhase::FifthTrick {
-                            bid_result: bid_result.clone(),
-                            hands: hands.clone(),
-                            trick_state: TrickState::create(bid_result.clone(), trick_winner),
-                            tricks_taken: *tricks_taken,
-                        }
+                if let Some(trick_winner) = trick_state.step(players, hands) {
+                    tricks_taken[trick_winner.index()] += 1;
+                    self.phase = HandPhase::FifthTrick {
+                        bid_result: bid_result.clone(),
+                        hands: hands.clone(),
+                        trick_state: TrickState::create(bid_result.clone(), trick_winner),
+                        tricks_taken: *tricks_taken,
                     }
-                    None => (),
                 };
                 None
             }
@@ -262,22 +243,19 @@ impl HandState {
                 trick_state,
                 tricks_taken,
             } => {
-                match trick_state.step(players, hands) {
-                    Some(trick_winner) => {
-                        tricks_taken[trick_winner.index()] += 1;
-                        self.phase = HandPhase::Scoring {
-                            bid_result: bid_result.clone().into(),
-                            tricks_taken: *tricks_taken,
-                        }
+                if let Some(trick_winner) = trick_state.step(players, hands) {
+                    tricks_taken[trick_winner.index()] += 1;
+                    self.phase = HandPhase::Scoring {
+                        bid_result: bid_result.clone().into(),
+                        tricks_taken: *tricks_taken,
                     }
-                    None => (),
                 };
                 None
             }
             HandPhase::Scoring {
                 bid_result,
                 tricks_taken,
-            } => Some(HandState::get_score(&bid_result, &tricks_taken)),
+            } => Some(HandState::get_score(bid_result, tricks_taken)),
         }
     }
 
@@ -287,10 +265,11 @@ impl HandState {
     ) -> Option<BidResultCalled> {
         loop {
             match &self.phase {
-                HandPhase::Bidding { .. } => match self.step(players) {
-                    Some(_) => return None,
-                    None => (),
-                },
+                HandPhase::Bidding { .. } => {
+                    if self.step(players).is_some() {
+                        return None;
+                    }
+                }
                 HandPhase::FirstTrick { bid_result, .. }
                 | HandPhase::SecondTrick { bid_result, .. }
                 | HandPhase::ThirdTrick { bid_result, .. }

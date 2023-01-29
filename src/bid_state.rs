@@ -76,7 +76,7 @@ impl BidState {
                     {
                         Some(phase) => phase,
                         None => BidPhase::FirstRoundSecondPlayer {
-                            trump_candidate: trump_candidate.clone(),
+                            trump_candidate: *trump_candidate,
                         },
                     };
                 None
@@ -88,7 +88,7 @@ impl BidState {
                     {
                         Some(phase) => phase,
                         None => BidPhase::FirstRoundThirdPlayer {
-                            trump_candidate: trump_candidate.clone(),
+                            trump_candidate: *trump_candidate,
                         },
                     };
                 None
@@ -100,7 +100,7 @@ impl BidState {
                     {
                         Some(phase) => phase,
                         None => BidPhase::FirstRoundFourthPlayer {
-                            trump_candidate: trump_candidate.clone(),
+                            trump_candidate: *trump_candidate,
                         },
                     };
                 None
@@ -230,7 +230,7 @@ impl BidState {
         if !players[bidder_index].should_order_up_alone(
             &hands[bidder_index],
             dealer,
-            &trump_candidate,
+            trump_candidate,
         ) {
             return Some(BidPhase::OrderedUp {
                 caller: bidder,
@@ -242,7 +242,7 @@ impl BidState {
         if players[defender_index].should_defend_alone_ordered(
             &hands[defender_index],
             dealer,
-            &trump_candidate,
+            trump_candidate,
         ) {
             Some(BidPhase::OrderedUpDefendedAlone {
                 caller: bidder,
@@ -275,9 +275,9 @@ impl BidState {
         dealer: &mut impl Player,
         hand: &mut HandBeforeBidding,
         card_ordered: CardBeforeBidding,
-    ) -> () {
+    ) {
         hand.cards.push(card_ordered);
-        let mut discard = dealer.choose_discard(&hand, &card_ordered.suit);
+        let mut discard = dealer.choose_discard(hand, &card_ordered.suit);
         if !hand.cards.contains(&discard) {
             discard = hand.cards[0];
         }
@@ -291,14 +291,14 @@ impl BidState {
         hands: &[HandBeforeBidding; 4],
         turned_down: &CardBeforeBidding,
     ) -> Option<BidResultAll> {
-        match players[bidder.index()].call_trump(&hands[bidder.index()], &dealer, turned_down) {
+        match players[bidder.index()].call_trump(&hands[bidder.index()], dealer, turned_down) {
             Some(trump) if trump != turned_down.suit => {
                 log::info!("{:?} called {}", bidder, trump);
                 if !players[bidder.index()].should_call_alone(
                     &hands[bidder.index()],
-                    &dealer,
+                    dealer,
                     &trump,
-                    &turned_down,
+                    turned_down,
                 ) {
                     return Some(BidResultAll::Called {
                         trump,
@@ -308,9 +308,9 @@ impl BidState {
                 let defender = bidder.next_position_bidding();
                 if players[defender.index()].should_defend_alone_called(
                     &hands[defender.index()],
-                    &dealer,
+                    dealer,
                     &trump,
-                    &turned_down,
+                    turned_down,
                 ) {
                     Some(BidResultAll::DefendedAlone {
                         trump,
@@ -321,9 +321,9 @@ impl BidState {
                     let defender = defender.partner();
                     if players[defender.index()].should_defend_alone_called(
                         &hands[defender.index()],
-                        &dealer,
+                        dealer,
                         &trump,
-                        &turned_down,
+                        turned_down,
                     ) {
                         Some(BidResultAll::DefendedAlone {
                             trump,
@@ -355,7 +355,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let turned_down = trump_candidate.clone();
+        let turned_down = trump_candidate;
         let mut players = make_players();
         let mut hands = make_hands();
         let expected_return_value = BidResultAll::NoOneCalled;
@@ -389,7 +389,7 @@ mod tests {
             rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
-        let card_ordered = trump_candidate.clone();
+        let card_ordered = trump_candidate;
         let mut players = make_players();
         players[dealer.index()] = PreprogrammedBidder::discards(CardBeforeBidding {
             suit: Suit::Spades,
@@ -428,7 +428,7 @@ mod tests {
             rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
-        let card_ordered = trump_candidate.clone();
+        let card_ordered = trump_candidate;
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = PreprogrammedBidder::orders_up();
@@ -461,7 +461,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let card_ordered = trump_candidate.clone();
+        let card_ordered = trump_candidate;
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = PreprogrammedBidder::orders_up_alone();
@@ -498,7 +498,7 @@ mod tests {
             rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
-        let card_ordered = trump_candidate.clone();
+        let card_ordered = trump_candidate;
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = PreprogrammedBidder::orders_up_alone();
@@ -540,7 +540,7 @@ mod tests {
             rank: Rank::Ace,
         };
         let trump = trump_candidate.suit;
-        let card_ordered = trump_candidate.clone();
+        let card_ordered = trump_candidate;
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = PreprogrammedBidder::orders_up_alone();
@@ -580,7 +580,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let turned_down = trump_candidate.clone();
+        let turned_down = trump_candidate;
         let mut players = make_players();
         let caller = Position::South;
         players[caller.index()] = PreprogrammedBidder::calls(Suit::Hearts);
@@ -615,7 +615,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let turned_down = trump_candidate.clone();
+        let turned_down = trump_candidate;
         let trump = Suit::Spades;
         let mut players = make_players();
         let caller = Position::South;
@@ -649,7 +649,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let turned_down = trump_candidate.clone();
+        let turned_down = trump_candidate;
         let trump = Suit::Spades;
         let mut players = make_players();
         let caller = Position::South;
@@ -683,7 +683,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let turned_down = trump_candidate.clone();
+        let turned_down = trump_candidate;
         let trump = Suit::Spades;
         let mut players = make_players();
         let caller = Position::South;
@@ -724,7 +724,7 @@ mod tests {
             suit: Suit::Hearts,
             rank: Rank::Ace,
         };
-        let turned_down = trump_candidate.clone();
+        let turned_down = trump_candidate;
         let trump = Suit::Spades;
         let mut players = make_players();
         let caller = Position::South;
