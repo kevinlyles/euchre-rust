@@ -1,6 +1,6 @@
 use core::fmt;
-
 use enum_iterator::IntoEnumIterator;
+use std::str::FromStr;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, IntoEnumIterator, PartialOrd, Ord)]
 pub enum Rank {
@@ -13,18 +13,6 @@ pub enum Rank {
 }
 
 impl Rank {
-    pub fn try_create(name: &str) -> Option<Rank> {
-        match name {
-            "A" => Some(Self::Ace),
-            "K" => Some(Self::King),
-            "Q" => Some(Self::Queen),
-            "J" => Some(Self::Jack),
-            "10" | "T" => Some(Self::Ten),
-            "9" | "N" => Some(Self::Nine),
-            _ => None,
-        }
-    }
-
     pub fn offset_for_unicode_card(&self) -> u32 {
         match self {
             Self::Ace => 0x1,
@@ -33,6 +21,22 @@ impl Rank {
             Self::Jack => 0xB,
             Self::Ten => 0xA,
             Self::Nine => 0x9,
+        }
+    }
+}
+
+impl FromStr for Rank {
+    type Err = String;
+
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        match name {
+            "A" => Ok(Self::Ace),
+            "K" => Ok(Self::King),
+            "Q" => Ok(Self::Queen),
+            "J" => Ok(Self::Jack),
+            "10" | "T" => Ok(Self::Ten),
+            "9" | "N" => Ok(Self::Nine),
+            _ => Err(format!("Invalid rank: {}", name)),
         }
     }
 }

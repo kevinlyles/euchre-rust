@@ -1,5 +1,6 @@
 use core::fmt;
 use enum_iterator::IntoEnumIterator;
+use std::str::FromStr;
 
 #[derive(Copy, Clone, Debug, IntoEnumIterator, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Suit {
@@ -10,16 +11,6 @@ pub enum Suit {
 }
 
 impl Suit {
-    pub fn try_create(name: &str) -> Option<Suit> {
-        match name {
-            "C" => Some(Self::Clubs),
-            "D" => Some(Self::Diamonds),
-            "H" => Some(Self::Hearts),
-            "S" => Some(Self::Spades),
-            _ => None,
-        }
-    }
-
     pub fn index(&self) -> usize {
         match self {
             Self::Spades => 0,
@@ -44,6 +35,20 @@ impl Suit {
             Self::Hearts => 0x1F0B0,
             Self::Diamonds => 0x1F0C0,
             Self::Clubs => 0x1F0D0,
+        }
+    }
+}
+
+impl FromStr for Suit {
+    type Err = String;
+
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        match name {
+            "C" => Ok(Self::Clubs),
+            "D" => Ok(Self::Diamonds),
+            "H" => Ok(Self::Hearts),
+            "S" => Ok(Self::Spades),
+            _ => Err(format!("Invalid suit: {}", name)),
         }
     }
 }

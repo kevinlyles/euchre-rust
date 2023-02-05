@@ -98,19 +98,21 @@ impl BidResultCalled {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     impl BidResultAll {
         pub fn called(trump: &str) -> BidResultAll {
             BidResultAll::Called {
-                trump: Suit::try_create(trump).unwrap(),
+                trump: Suit::from_str(trump).unwrap(),
                 caller: Position::South,
             }
         }
 
         pub fn alone(trump: &str) -> BidResultAll {
             BidResultAll::CalledAlone {
-                trump: Suit::try_create(trump).unwrap(),
+                trump: Suit::from_str(trump).unwrap(),
                 caller: Position::South,
             }
         }

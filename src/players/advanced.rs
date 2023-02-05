@@ -438,6 +438,8 @@ impl Player for AdvancedPlayer {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::{
         bid_result::BidResultAll,
@@ -514,13 +516,13 @@ mod tests {
         let hand = HandBeforeBidding {
             cards: hand
                 .iter()
-                .map(|&card| CardBeforeBidding::try_create(card).unwrap())
+                .map(|&card| CardBeforeBidding::from_str(card).unwrap())
                 .collect(),
         };
-        let trump_candidate = CardBeforeBidding::try_create(trump_candidate).unwrap();
+        let trump_candidate = CardBeforeBidding::from_str(trump_candidate).unwrap();
         let expected_hand = match discard {
             Some(discard) => {
-                let discard = CardBeforeBidding::try_create(discard).unwrap();
+                let discard = CardBeforeBidding::from_str(discard).unwrap();
                 assert!(
                     hand.cards.contains(&discard) || trump_candidate == discard,
                     "Invalid discard"

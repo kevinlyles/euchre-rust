@@ -27,7 +27,7 @@ use players::{
 };
 use position::Position;
 use rayon::prelude::ParallelIterator;
-use std::{collections::HashMap, env};
+use std::{collections::HashMap, env, str::FromStr};
 use suit::Suit;
 
 mod bid_result;
@@ -124,9 +124,9 @@ fn process_args(
             "--trump-candidate"
                 if matches!(trump_candidate, None) && i + 1 < simulate_args.len() =>
             {
-                match CardBeforeBidding::try_create(simulate_args[i + 1].as_str()) {
-                    Some(card) => trump_candidate = Some(card),
-                    None => panic!("Invalid card: {}", simulate_args[i + 1]),
+                match CardBeforeBidding::from_str(simulate_args[i + 1].as_str()) {
+                    Ok(card) => trump_candidate = Some(card),
+                    Err(error) => panic!("{}", error),
                 };
                 i += 1;
             }
@@ -144,17 +144,17 @@ fn process_args(
             "--call-suit"
                 if !order_up && matches!(call_suit, None) && i + 1 < simulate_args.len() =>
             {
-                match Suit::try_create(simulate_args[i + 1].as_str()) {
-                    Some(suit) => call_suit = Some(suit),
-                    None => panic!("Invalid suit: {}", simulate_args[i + 1]),
+                match Suit::from_str(simulate_args[i + 1].as_str()) {
+                    Ok(suit) => call_suit = Some(suit),
+                    Err(error) => panic!("{}", error),
                 };
                 i += 1;
             }
             "--go-alone" if !go_alone => go_alone = true,
             "--ignore-other-bids" => ignore_other_bids = true,
-            card => match CardBeforeBidding::try_create(card) {
-                Some(card) => hand.cards.push(card),
-                None => panic!("Invalid card: {}", card),
+            card => match CardBeforeBidding::from_str(card) {
+                Ok(card) => hand.cards.push(card),
+                Err(error) => panic!("{}", error),
             },
         }
         i += 1;
@@ -173,7 +173,7 @@ fn process_args(
                 hand.cards.len()
             );
     }
-    //TODO: handle defending alone by running the bidding process as well
+    //TODO: handle defending alone somehow
     let (bidder, bid_result) = if order_up {
         if go_alone {
             (
