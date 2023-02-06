@@ -94,6 +94,36 @@ impl BidResultCalled {
             | Self::DefendedAlone { caller, .. } => *caller,
         }
     }
+
+    pub(crate) fn is_equivalent(&self, value: &Self) -> bool {
+        if self == value {
+            return true;
+        }
+
+        match self {
+            Self::CalledAlone {
+                trump: trump1,
+                caller: caller1,
+            }
+            | Self::DefendedAlone {
+                trump: trump1,
+                caller: caller1,
+                ..
+            } => match value {
+                Self::CalledAlone {
+                    trump: trump2,
+                    caller: caller2,
+                }
+                | Self::DefendedAlone {
+                    trump: trump2,
+                    caller: caller2,
+                    ..
+                } => trump1 == trump2 && caller1 == caller2,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]

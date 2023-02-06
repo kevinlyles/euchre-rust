@@ -103,7 +103,6 @@ fn simulate_hand(args: SimulateHandArgs) {
 }
 
 fn get_bidding_info(args: &SimulateHandArgs) -> (PreprogrammedBidder, BidResultCalled) {
-    //TODO: handle defending alone somehow
     let (bidder, bid_result) = if args.order_up {
         if args.go_alone {
             (
@@ -183,7 +182,7 @@ fn run_permutation(
         },
     ];
     match hand_state.finish_bidding(&mut players) {
-        Some(bid_result) if bid_result == *expected_bid_result => (),
+        Some(bid_result) if expected_bid_result.is_equivalent(&bid_result) => (),
         _ => return HandResult::DifferentBidResult,
     };
     loop {
