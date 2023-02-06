@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::bid_result::BidResultCalled;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,6 +54,20 @@ impl Position {
                 next_position.next_position_playing(bid_result)
             }
             _ => next_position,
+        }
+    }
+}
+
+impl FromStr for Position {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "N" => Ok(Self::North),
+            "E" => Ok(Self::East),
+            "S" => Ok(Self::South),
+            "W" => Ok(Self::West),
+            _ => Err(format!("Invalid position: {}", s)),
         }
     }
 }

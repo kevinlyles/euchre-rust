@@ -14,8 +14,9 @@
 #![warn(unused_tuple_struct_fields)]
 #![warn(variant_size_differences)]
 
+use args::{Commands, EuchreArgs, SimulateHandArgs};
 use bid_result::BidResultCalled;
-use card::CardBeforeBidding;
+use clap::Parser;
 use game_state::GameState;
 use hand::HandBeforeBidding;
 use hand_state::HandState;
@@ -27,9 +28,9 @@ use players::{
 };
 use position::Position;
 use rayon::prelude::ParallelIterator;
-use std::{collections::HashMap, env, str::FromStr};
-use suit::Suit;
+use std::collections::HashMap;
 
+mod args;
 mod bid_result;
 mod bid_state;
 mod card;
@@ -56,130 +57,59 @@ enum HandResult {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.contains(&"--simulate-hand".to_owned()) {
-        let (hand, trump_candidate, dealer, bidder, expected_bid_result, ignore_other_bids) =
-            process_args(args);
-        let hand_states = HandState::create_with_scenario(dealer, trump_candidate, hand);
-        let (total_count, result_counts) = hand_states
-            .map_with(
-                (bidder, expected_bid_result),
-                |(bidder, expected_bid_result), mut hand_state| {
-                    run_permutation(
-                        bidder,
-                        expected_bid_result,
-                        &mut hand_state,
-                        ignore_other_bids,
-                    )
-                },
-            )
-            .fold(
-                || (0, HashMap::<HandResult, u64>::new()),
-                |(count, mut result_counts), hand_result| {
-                    add_to_results(&mut result_counts, hand_result, 1);
-                    (count + 1, result_counts)
-                },
-            )
-            .reduce(
-                || (0, HashMap::<HandResult, u64>::new()),
-                |(count_1, mut result_counts_1), (count_2, result_counts_2)| {
-                    for (result, count) in result_counts_2.into_iter() {
-                        add_to_results(&mut result_counts_1, result, count);
-                    }
-                    (count_1 + count_2, result_counts_1)
-                },
-            );
-        tally_results(result_counts, total_count);
-    } else {
-        simulate_full_game();
+    let args = EuchreArgs::parse();
+    match args.command {
+        Commands::PlayGame => simulate_full_game(),
+        Commands::SimulateHand(args) => simulate_hand(args),
     }
 }
 
-//TODO: use Args crate (or some other crate) to handle this
-fn process_args(
-    args: Vec<String>,
-) -> (
-    HandBeforeBidding,
-    CardBeforeBidding,
-    Position,
-    PreprogrammedBidder,
-    BidResultCalled,
-    bool,
-) {
-    let simulate_args: Vec<String> = args
-        .into_iter()
-        .skip_while(|arg| arg != "--simulate-hand")
-        .skip(1)
-        .collect();
-    let mut hand = HandBeforeBidding { cards: Vec::new() };
-    let mut trump_candidate = None;
-    let mut dealer = None;
-    let mut order_up = false;
-    let mut call_suit = None;
-    let mut go_alone = false;
-    let mut ignore_other_bids = false;
-    let mut i = 0;
-    while i < simulate_args.len() {
-        match simulate_args[i].as_str() {
-            "--trump-candidate"
-                if matches!(trump_candidate, None) && i + 1 < simulate_args.len() =>
-            {
-                match CardBeforeBidding::from_str(simulate_args[i + 1].as_str()) {
-                    Ok(card) => trump_candidate = Some(card),
-                    Err(error) => panic!("{}", error),
-                };
-                i += 1;
-            }
-            "--dealer" if matches!(dealer, None) && i + 1 < simulate_args.len() => {
-                dealer = Some(match simulate_args[i + 1].as_str() {
-                    "N" => Position::North,
-                    "E" => Position::East,
-                    "S" => Position::South,
-                    "W" => Position::West,
-                    other => panic!("Invalid dealer: {}", other),
-                });
-                i += 1;
-            }
-            "--order-up" if !order_up && matches!(call_suit, None) => order_up = true,
-            "--call-suit"
-                if !order_up && matches!(call_suit, None) && i + 1 < simulate_args.len() =>
-            {
-                match Suit::from_str(simulate_args[i + 1].as_str()) {
-                    Ok(suit) => call_suit = Some(suit),
-                    Err(error) => panic!("{}", error),
-                };
-                i += 1;
-            }
-            "--go-alone" if !go_alone => go_alone = true,
-            "--ignore-other-bids" => ignore_other_bids = true,
-            card => match CardBeforeBidding::from_str(card) {
-                Ok(card) => hand.cards.push(card),
-                Err(error) => panic!("{}", error),
+fn simulate_hand(args: SimulateHandArgs) {
+    let (bidder, expected_bid_result) = get_bidding_info(&args);
+    let hand_states = HandState::create_with_scenario(
+        args.dealer,
+        args.trump_candidate,
+        HandBeforeBidding { cards: args.hand },
+    );
+    let (total_count, result_counts) = hand_states
+        .map_with(
+            (bidder, expected_bid_result),
+            |(bidder, expected_bid_result), mut hand_state| {
+                run_permutation(
+                    bidder,
+                    expected_bid_result,
+                    &mut hand_state,
+                    args.ignore_other_bids,
+                )
             },
-        }
-        i += 1;
-    }
-    if dealer.is_none() {
-        panic!("No dealer specified (use --dealer {{N|E|S|W}})");
-    }
-    let dealer = dealer.unwrap();
-    if trump_candidate.is_none() {
-        panic!("No trump candidate specified (use --trump-candidate {{A|K|Q|J|T|N}}{{C|D|H|S}})");
-    }
-    let trump_candidate = trump_candidate.unwrap();
-    if hand.cards.len() != 5 {
-        panic!(
-                "Incorrect number of cards specified: {} (expected 5). Card format: {{A|K|Q|J|T|N}}{{C|D|H|S}}",
-                hand.cards.len()
-            );
-    }
+        )
+        .fold(
+            || (0, HashMap::<HandResult, u64>::new()),
+            |(count, mut result_counts), hand_result| {
+                add_to_results(&mut result_counts, hand_result, 1);
+                (count + 1, result_counts)
+            },
+        )
+        .reduce(
+            || (0, HashMap::<HandResult, u64>::new()),
+            |(count_1, mut result_counts_1), (count_2, result_counts_2)| {
+                for (result, count) in result_counts_2.into_iter() {
+                    add_to_results(&mut result_counts_1, result, count);
+                }
+                (count_1 + count_2, result_counts_1)
+            },
+        );
+    tally_results(result_counts, total_count);
+}
+
+fn get_bidding_info(args: &SimulateHandArgs) -> (PreprogrammedBidder, BidResultCalled) {
     //TODO: handle defending alone somehow
-    let (bidder, bid_result) = if order_up {
-        if go_alone {
+    let (bidder, bid_result) = if args.order_up {
+        if args.go_alone {
             (
                 PreprogrammedBidder::orders_up_alone(),
                 BidResultCalled::CalledAlone {
-                    trump: trump_candidate.suit,
+                    trump: args.trump_candidate.suit,
                     caller: Position::South,
                 },
             )
@@ -187,13 +117,13 @@ fn process_args(
             (
                 PreprogrammedBidder::orders_up(),
                 BidResultCalled::Called {
-                    trump: trump_candidate.suit,
+                    trump: args.trump_candidate.suit,
                     caller: Position::South,
                 },
             )
         }
-    } else if let Some(trump) = call_suit {
-        if go_alone {
+    } else if let Some(trump) = args.call_suit {
+        if args.go_alone {
             (
                 PreprogrammedBidder::calls_alone(trump),
                 BidResultCalled::CalledAlone {
@@ -213,14 +143,7 @@ fn process_args(
     } else {
         panic!("You must either order the trump candidate up (--order-up) or call a trump suit (--call-suit {{C|D|H|S}}");
     };
-    (
-        hand,
-        trump_candidate,
-        dealer,
-        bidder,
-        bid_result,
-        ignore_other_bids,
-    )
+    (bidder, bid_result)
 }
 
 fn run_permutation(
